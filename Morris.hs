@@ -12,7 +12,7 @@ import Data.Char
 
 -- starting state: Human moves first, each player has 9 pieces, and the board is empty
 initialState :: GameState
-initialState = (humanChar, 9, 9, ([],[]))
+initialState = (Human, 9, 9, ([],[]))
 
 -- Play the game from the initial state
 morris :: IO ()
@@ -24,14 +24,12 @@ morris = do
 playGame :: GameState -> IO ()
 playGame state = 
     do
-        let over = gameOver state 
-        if (over == 'H') then 
+        let currentStatus = (status state) 
+        if (currentStatus == HumanWon) then 
             putStrLn "YOU WIN!"
-        else if (over == 'C') then
+        else if (currentStatus == ComputerWon) then
             putStrLn "YOU LOSE!"
-        else if (over == 'D') then
-            putStrLn "GAME IS A DRAW"
-        else if (playLevel < 3 || phase1 state) then
+        else if (playLevel < 3 || isPlacingPhase state) then
             playPhase1 state -- placing pieces on the board
         else
             playPhase2 state -- moving pieces, level 3 only
@@ -41,7 +39,7 @@ playGame state =
 -- (phase 1).  Parameter is the current game state      
 playPhase1 :: GameState -> IO ()
 playPhase1 state =
-    if ((getPlayer state) == humanChar)  then do -- player's turn
+    if ((getPlayer state) == Human)  then do -- player's turn
         putStrLn "\nYOUR TURN"
         putStrLn ("you have " ++ (show (getHumanCount state))
             ++ " piece(s) left")
@@ -120,7 +118,7 @@ computerMill state = do
 -- Parameter is starting state.
 playPhase2 :: GameState -> IO ()
 playPhase2 state = 
-    if ((getPlayer state) == humanChar) then do -- human player's turn
+    if ((getPlayer state) == Human) then do -- human player's turn
         putStrLn "\nYOUR TURN"
         (fromPos,toPos) <- choosePhase2Move state
         let state2 = removePiece state fromPos
@@ -153,9 +151,9 @@ playPhase2 state =
 newMill :: GameState -> GameState -> Bool
 newMill state1 state2 = mills2 > mills1
     where
-    player = getPlayer state1 -- the player who made the move
-    mills1 = millCount (getBoard state1) player
-    mills2 = millCount (getBoard state2) player
+    p = getPlayer state1 -- the player who made the move
+    mills1 = millCount p $ getBoard state1
+    mills2 = millCount p $ getBoard state2
     
     
 -- Prompts human player to pick an unoccupied position (without listing 
@@ -213,7 +211,7 @@ choosePhase2Move :: GameState -> IO (Int,Int)
 choosePhase2Move state = do
     fromPos <- choosePosition "position to move from" (getHumanPositions state)
     toPos <- choosePosition "position to move to" (getPossibleMovePositions state fromPos)
-    if not (adjacent fromPos toPos) then do
+    if not (isAdjacent fromPos toPos) then do
             putStrLn "these two positions are not adjacent"
             move <- choosePhase2Move state
             return move
@@ -233,7 +231,7 @@ allDigits str = and (map isDigit str)
 displayState :: GameState -> IO()
 displayState (player, bcount, wcount, board) =
     do
-        putStrLn ([player] ++ "\'s turn")
+        putStrLn ([getPlayerMark player] ++ "\'s turn")
         putStrLn ("You have " ++ (show bcount) ++ " piece(s) left")
         putStrLn ("I have " ++ (show wcount) ++ " piece(s) left")
         displayBoard board
@@ -277,8 +275,8 @@ boardString board = concat (map combineStrings (zip displayStrings displayPaddin
 -- Parameters: a board and a position (int in 1..24)
 positionStr :: Board -> Int -> String
 positionStr (humans, computers) pos
-    | elem pos humans = [humanChar]
-    | elem pos computers = [computerChar]
+    | elem pos humans = [getPlayerMark Human]
+    | elem pos computers = [getPlayerMark Computer]
     | otherwise = show pos
     
 -- Combines a position string with the padding that comes after it.

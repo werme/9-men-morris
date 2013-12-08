@@ -20,10 +20,7 @@ otherPlayer c
     | c == humanChar = computerChar
     | otherwise = humanChar
 
-data Player = Player { playerType :: PlayerType, mark :: Char }
-  deriving (Eq, Show)
-
-data PlayerType = Human | Computer
+data Player = Human | Computer
   deriving (Eq, Show)
 
 -- A board is described by a tuple of two lists: the human player's squares and the 
@@ -39,69 +36,79 @@ type Board = ([Int],[Int])
 -- 4. the board
 type GameState = (Player, Int, Int, Board)
 
+data Status = HumanWon | ComputerWon | Ongoing
+  deriving (Eq)
+
+getPlayerMark :: Player -> Char
+getPlayerMark Human    = 'X'
+getPlayerMark Computer = 'O'
+
+opponent :: Player -> Player
+opponent Human    = Computer
+opponent Computer = Human
+
 -- extract parts of a state
-getPlayer :: GameState -> Char
-getPlayer (player,_,_,_) = player
+  
+getPlayer :: GameState -> Player
+getPlayer (p,_,_,_) = p
 
 getBoard :: GameState -> Board
-getBoard (_,_,_,board) = board
+getBoard (_,_,_,b) = b
 
 getHumanCount :: GameState -> Int
-getHumanCount (_,hcount,_,_) = hcount
+getHumanCount (_,hc,_,_) = hc
 
 getCompCount :: GameState -> Int
-getCompCount (_,_,ccount,_) = ccount
+getCompCount (_,_,cc,_) = cc
 
 getHumanPositions :: GameState -> [Int]
-getHumanPositions (_,_,_,(hpos,_)) = sort hpos
+getHumanPositions (_,_,_,(hps,_)) = sort hps
 
 getCompPositions :: GameState -> [Int]
-getCompPositions (_,_,_,(_,cpos)) = cpos
+getCompPositions (_,_,_,(_,cps)) = cps
 
 getPlayerPositions :: Player -> Board -> [Int]
-getPlayerPositions (Player Human _) (hps,_) = hps
-getPlayerPositions (Player Computer _) (_,cps) = cps
+getPlayerPositions Human (hps,_) = hps
+getPlayerPositions Computer (_,cps) = cps
 
 getEmptyPositions :: GameState -> [Int]
-getEmptyPositions (_,_,_,(hpos,cpos)) =
-    [x|x<-[1..24], not (elem x hpos), not (elem x cpos)]
+getEmptyPositions (_,_,_,(hps,cps)) =
+    [ p | p <- [1..24], not $ elem p hps, not $ elem p cps ]
 
 getPossibleMovePositions :: GameState -> Int -> [Int]
 getPossibleMovePositions state p = pps
   where
     eps = getEmptyPositions state
-    pps = [ pp | pp <- eps, adjacent p pp ]
+    pps = [ pp | pp <- eps, isAdjacent p pp ]
 
 playerMills :: GameState -> [[Int]]
-playerMills (p,_,_,b)  = 
+playerMills (p,_,_,b) = pms
   where 
     ps        = getPlayerPositions p b
     pms       = foldr (\m ms -> if hasMill m then m:ms else ms) [] mills
     hasMill m = all (\mp -> mp `elem` ps) m
 
 canMove :: GameState -> Bool
-canMove state = any (\p' -> not $ null $ getPossibleMovePositions state p') pps
-  where p   = getPlayer state
-        pps = getPlayerPositions p $ getBoard state
+canMove s = any (\p' -> not $ null $ getPossibleMovePositions s p') pps
+  where p   = getPlayer s
+        pps = getPlayerPositions p $ getBoard s
 
-phase1 :: GameState -> Bool
-phase1 (_,hcount,ccount,_) = hcount > 0 || ccount > 0
+isPlacingPhase :: GameState -> Bool
+isPlacingPhase (_,hc,cc,_) = hc > 0 || cc > 0
 
-phase2 :: GameState -> Bool
-phase2 state = not (phase1 state)
+isMovePhase :: GameState -> Bool
+isMovePhase s = not $ isPlacingPhase s 
 
 -- a move in phase1 is a single integer: the position on which to put a piece
-type Phase1Move = Int
+type Place = Int
 -- a move in phase2 is a pair of integers: (position to move from, position to move to)
-type Phase2Move = (Int,Int)
+type Move = (Int,Int)
 
 -- Given a game state, returns an equivalent game state where it's the other
 -- player's turn
 switchPlayer :: GameState -> GameState
-switchPlayer (player, hcount, ccount, board)
-    | player == humanChar = (computerChar, hcount, ccount, board)
-    | otherwise = (humanChar, hcount, ccount, board)
-
+switchPlayer (Human, hc, cc, b)    = (Computer, hc, cc, b)
+switchPlayer (Computer, hc, cc, b) = (Human, hc, cc, b)
 
 -- The set of all the possible mills, each given as a 3-element list of 
 -- positions.  Each mill is given in one order only.
@@ -118,10 +125,7 @@ adjacentSpaces :: [[Int]]
 adjacentSpaces = [[x,y]|[x,y,_] <- mills] ++ [[x,y]|[_,x,y] <- mills]
 
 -- adjacent x y is true if x and y are adjacent
-adjacent :: Int -> Int -> Bool
-adjacent x y = elem [x,y] adjacentSpaces || elem [y,x] adjacentSpaces
-
-
-
+isAdjacent :: Int -> Int -> Bool
+isAdjacent x y = elem [x,y] adjacentSpaces || elem [y,x] adjacentSpaces
 
 

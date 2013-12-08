@@ -24,8 +24,8 @@ playLevel = 3 -- implement level 1 first, then progress to 2 & 3
 -- Return value: the number of mills the player has
 -- (This function is technically not necessary until level 2, but
 -- it's a very useful helper for level 1)
-millCount :: Board -> Char -> Int
-millCount b p = pms
+millCount :: Player -> Board -> Int
+millCount p b = pms
   where 
     ps        = getPlayerPositions p b
     pms       = foldr (\m mc -> if hasMill m then (mc + 1) else mc) 0 mills
@@ -42,14 +42,14 @@ millCount b p = pms
 -- At level 3, the game is over when one player has less than 3 pieces
 -- on the board or can't move any of their pieces.  That player loses.
 -- There will be no draws at level 3.
-gameOver :: GameState -> Char
-gameOver (_,hc,cc,(hps,cps)) = result
+status :: GameState -> Status
+status (p,hc,cc,(hps,cps)) | hasLost Human hps    = ComputerWon 
+                           | hasLost Computer cps = HumanWon
+                           | otherwise            = Ongoing 
   where 
-    state p    = (p,hc,cc,(hps,cps))
-    loose p ps = phase2 (state p) && (length ps < 3 || (not $ canMove $ state p))
-    result | loose 'H' hps = 'C' 
-           | loose 'C' cps = 'H'
-           | otherwise   = 'X'
+    s                  = (p,hc,cc,(hps,cps))
+    looseCondition p ps = length ps < 3 || (not $ canMove s)
+    hasLost p ps       = isMovePhase s && looseCondition p ps
     
 -- Given a game state (assuming it's the computer's turn), pick the best 
 -- legal phase 1 move to make (adding a piece to the board).
@@ -58,13 +58,14 @@ gameOver (_,hc,cc,(hps,cps)) = result
 bestMove1 :: GameState -> Int
 bestMove1 (p,hc,cc,(hps,cps)) = bestP p (getEmptyPositions state)
   where
-    state = (p,hc,cc,(hps,cps))
-    mc = millCount (hps,cps) p
-    bestP _ [] = not $ null $ playerMills state
-    bestP 'H' (p':eps) | millCount (p':hps,cps) 'H' > mc = p' 
-                       | otherwise                       = bestP 'H' eps
-    bestP 'C' (p':eps) | millCount (hps,p':cps) 'C' > mc = p'
-                       | otherwise                       = bestP 'C' eps
+    state      = (p,hc,cc,(hps,cps))
+    mc         = millCount p (hps,cps)
+    pms        = playerMills state
+    bestP _ [] = head $ getEmptyPositions state
+    bestP Human (p':eps) | millCount Human (p':hps,cps) > mc = p' 
+                         | otherwise                         = bestP Human eps
+    bestP Computer (p':eps) | millCount Computer (hps,p':cps) > mc = p'
+                            | otherwise                            = bestP Computer eps
 
 -- A new game state produced by placing a piece on the board
 -- Parameters: initial state and position where piece will go.  The piece 
@@ -72,8 +73,8 @@ bestMove1 (p,hc,cc,(hps,cps)) = bestP p (getEmptyPositions state)
 -- has at least one piece remaining and the position is free.
 -- Returns: new game state.  The player does not change.
 addPiece :: GameState -> Int -> GameState
-addPiece ('H', hc, cc, (hss,css)) ns = ('H', hc-1, cc, (ns:hss,css))
-addPiece ('C', hc, cc, (hss,css)) ns = ('C', hc, cc-1, (hss,ns:css))
+addPiece (Human, hc, cc, (hss,css)) ns    = (Human, hc-1, cc, (ns:hss,css))
+addPiece (Computer, hc, cc, (hss,css)) ns = (Computer, hc, cc-1, (hss,ns:css))
       
 ---------------------------------------------------------------------
 -- FUNCTIONS NEEDED FOR LEVELS 2&3 ONLY
@@ -97,11 +98,10 @@ removePiece (p,hc,cc,(hss,css)) s = (p,hc,cc,(nhss,ncss))
 -- pieces which are not part of a mill.  Exception: if there are no 
 -- pieces outside a mill, then any piece may be captured.  
 captureList :: GameState -> [Int]
-captureList state | not $ null cps = sort cps
-                  | otherwise      = sort pps
+captureList (p,_,_,b) | not $ null cps = sort cps
+                      | otherwise      = sort pps
   where
-    p             = otherPlayer $ getPlayer state
-    pps           = getPlayerPositions p $ getBoard state
+    pps           = getPlayerPositions (opponent p) b
     cps           = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
     deleteAll l d = foldr delete l d
     hasMill m     = all (\mp -> mp `elem` pps) m
@@ -110,7 +110,7 @@ captureList state | not $ null cps = sort cps
 -- Parameters: starting state and list of possible captures (assume 
 -- non-empty)
 bestCapture :: GameState -> [Int] -> Int
-bestCapture state positions = 1 -- dummy
+bestCapture (p,_,_,b) ps = head ps
 
 ---------------------------------------------------------------------
 -- FUNCTION NEEDED FOR LEVEL 3 ONLY
@@ -130,6 +130,10 @@ bestCapture state positions = 1 -- dummy
 --       next move
 --    C. Pick the move that gives you the state with the best score, as 
 --       in phase 1.
-bestMove2 :: GameState -> Phase2Move
-bestMove2 state = (1,2) -- dummy
+bestMove2 :: GameState -> Move
+bestMove2 (p,hc,cc,b) = (from,too) -- dummy
+  where
+    pmps s p' = getPossibleMovePositions s p'
+    from     = head $ [ p'' | p'' <- getPlayerPositions p b, not $ null $ pmps (p,hc,cc,b) p'' ]
+    too      = head $ pmps (p,hc,cc,b) from
    
