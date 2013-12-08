@@ -30,6 +30,23 @@ millCount p b = pms
     ps        = getPlayerPositions p b
     pms       = foldr (\m mc -> if hasMill m then (mc + 1) else mc) 0 mills
     hasMill m = all (\mp -> mp `elem` ps) m
+
+twoOutOfThreeCount :: Player -> Board -> Int
+twoOutOfThreeCount p b = pms
+  where 
+    ps       = getPlayerPositions p b
+    ops      = getPlayerPositions (opponent p) b
+    pms      = foldr (\m mc -> if hasTwo m then (mc + 1) else mc) 0 mills
+    mps m    = foldr (\p' ps' -> if p' `elem` ps then (ps' + 1) else ps') 0 m
+    hasTwo m = (mps m == 2) && (not $ any (\p'' -> p'' `elem` ops) m)
+
+playerScore :: Player -> Board -> Int
+playerScore p b = mss + omss + tots + otots
+  where 
+    mss   = 10 * (millCount p b)
+    omss  = (-9) * (millCount (opponent p) b)
+    tots  = 4 * (twoOutOfThreeCount p b)
+    otots = (-5) * (twoOutOfThreeCount (opponent p) b)
     
 -- Tests if the game is over.  Returns one of four characters:
 --   humanChar: game is over and human player has won
