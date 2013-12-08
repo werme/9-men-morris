@@ -12,8 +12,8 @@ import Data.List
 
 -- this constant defines the level at which we are playing 
 -- (must be 1, 2 or 3)
-playLevel :: Int
-playLevel = 3 -- implement level 1 first, then progress to 2 & 3
+--playLevel :: Int
+--playLevel = 3 -- implement level 1 first, then progress to 2 & 3
 
 ---------------------------------------------------------------------
 -- FUNCTIONS NEEDED FOR ALL THREE LEVELS

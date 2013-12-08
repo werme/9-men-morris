@@ -29,7 +29,7 @@ playGame state =
             putStrLn "YOU WIN!"
         else if (currentStatus == ComputerWon) then
             putStrLn "YOU LOSE!"
-        else if (playLevel < 3 || isPlacingPhase state) then
+        else if (isPlacingPhase state) then
             playPhase1 state -- placing pieces on the board
         else
             playPhase2 state -- moving pieces, level 3 only
@@ -47,7 +47,7 @@ playPhase1 state =
         let nextState = addPiece state position
         putStrLn "\nthe board after your move:"
         displayBoard (getBoard nextState)
-        if (playLevel >=2 && newMill state nextState) then do
+        if (newMill state nextState) then do
             newerState <- humanMill nextState
             playGame (switchPlayer newerState)
         else
@@ -61,7 +61,7 @@ playPhase1 state =
         let nextState = addPiece state newPosition
         putStrLn "the board after my move:"
         displayBoard (getBoard nextState)
-        if (playLevel >=2 && newMill state nextState) then do
+        if (newMill state nextState) then do
             newerState <- computerMill nextState
             playGame (switchPlayer newerState)
         else
