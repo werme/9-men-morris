@@ -64,25 +64,19 @@ status (p,hc,cc,(hps,cps)) | hasLost Human hps    = ComputerWon
                            | hasLost Computer cps = HumanWon
                            | otherwise            = Ongoing 
   where 
-    s                  = (p,hc,cc,(hps,cps))
+    s                   = (p,hc,cc,(hps,cps))
     looseCondition p ps = length ps < 3 || (not $ canMove s)
-    hasLost p ps       = isMovePhase s && looseCondition p ps
+    hasLost p ps        = isMovePhase s && looseCondition p ps
     
 -- Given a game state (assuming it's the computer's turn), pick the best 
 -- legal phase 1 move to make (adding a piece to the board).
 -- Return value: the position where the new piece should go.
 -- Assumes the game is not over, so there will be a legal move.
 bestMove1 :: GameState -> Int
-bestMove1 (p,hc,cc,(hps,cps)) = bestP p (getEmptyPositions state)
+bestMove1 (p,hc,cc,(hps,cps)) = best $ getEmptyPositions (p,hc,cc,(hps,cps))
   where
-    state      = (p,hc,cc,(hps,cps))
-    mc         = millCount p (hps,cps)
-    pms        = playerMills state
-    bestP _ [] = head $ getEmptyPositions state
-    bestP Human (p':eps) | millCount Human (p':hps,cps) > mc = p' 
-                         | otherwise                         = bestP Human eps
-    bestP Computer (p':eps) | millCount Computer (hps,p':cps) > mc = p'
-                            | otherwise                            = bestP Computer eps
+    better np op = playerScore p (hps,np:cps) > playerScore p (hps,op:cps) 
+    best ps      = foldr1 (\p' bp -> if better p' bp then p' else bp) ps
 
 -- A new game state produced by placing a piece on the board
 -- Parameters: initial state and position where piece will go.  The piece 
