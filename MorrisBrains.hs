@@ -142,9 +142,5 @@ bestCapture (p,_,_,b) ps = head ps
 --    C. Pick the move that gives you the state with the best score, as 
 --       in phase 1.
 bestMove2 :: GameState -> Move
-bestMove2 (p,hc,cc,b) = (from,too) -- dummy
-  where
-    pmps s p' = getPossibleMovePositions s p'
-    from     = head $ [ p'' | p'' <- getPlayerPositions p b, not $ null $ pmps (p,hc,cc,b) p'' ]
-    too      = head $ pmps (p,hc,cc,b) from
+bestMove2 s = (1,2) -- TODO
    
