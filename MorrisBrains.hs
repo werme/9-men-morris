@@ -47,7 +47,13 @@ playerScore p b = mss + omss + tots + otots
     omss  = (-9) * millCount (opponent p) b
     tots  = 4 * twoOutOfThreeCount p b
     otots = (-5) * twoOutOfThreeCount (opponent p) b
-    
+
+movableList :: GameState -> [Place]
+movableList s = undefined
+
+possibleMovesList :: GameState -> [Move]
+possibleMovesList s = undefined
+
 -- Tests if the game is over.  Returns one of four characters:
 --   humanChar: game is over and human player has won
 --   computerChar: game is over and computer has won
