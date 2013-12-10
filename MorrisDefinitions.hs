@@ -63,7 +63,7 @@ getPlayerPositions Computer (_,cps) = cps
 
 getEmptyPositions :: GameState -> [Int]
 getEmptyPositions (_,_,_,(hps,cps)) =
-    [ p | p <- [1..24], not $ elem p hps, not $ elem p cps ]
+    [ p | p <- [1..24], p `notElem` hps, p `notElem` cps ]
 
 getPossibleMovePositions :: GameState -> Int -> [Int]
 getPossibleMovePositions state p = pps
@@ -74,12 +74,12 @@ getPossibleMovePositions state p = pps
 playerMills :: GameState -> [[Int]]
 playerMills (p,_,_,b) = pms
   where 
-    ps        = getPlayerPositions p b
-    pms       = foldr (\m ms -> if hasMill m then m:ms else ms) [] mills
-    hasMill m = all (\mp -> mp `elem` ps) m
+    ps      = getPlayerPositions p b
+    pms     = foldr (\m ms -> if hasMill m then m:ms else ms) [] mills
+    hasMill = all (`elem` ps)
 
 canMove :: GameState -> Bool
-canMove s = any (\p' -> not $ null $ getPossibleMovePositions s p') pps
+canMove s = any (not . null . getPossibleMovePositions s) pps
   where p   = getPlayer s
         pps = getPlayerPositions p $ getBoard s
 
