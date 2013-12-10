@@ -68,7 +68,8 @@ canMove s = any (not . null . getPossibleMovePositions s) pps
   where pps = getPositionsWithState (getBoard s) (Just (getPlayerColor s))
 
 isPlacingPhase :: GameState -> Bool
-isPlacingPhase (_,hc,cc,_) = hc > 0 || cc > 0
+isPlacingPhase (Player Black,bpl,_,_) = bpl > 0
+isPlacingPhase (Player White,_,wpl,_) = wpl > 0
 
 isMovePhase :: GameState -> Bool
 isMovePhase s = not $ isPlacingPhase s 
