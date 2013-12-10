@@ -35,7 +35,7 @@ twoOutOfThreeCount :: Player -> Board -> Int
 twoOutOfThreeCount (Player c) b = pms
   where 
     pps      = getPositionsWithState b (Just c)
-    ops      = getPositionsWithState b $ (Just $ invert c)
+    ops      = getPositionsWithState b (Just $ invert c)
     pms      = foldr (\m mc -> if hasTwo m then mc + 1 else mc) 0 mills
     mps      = foldr (\p' ps' -> if p' `elem` pps then ps' + 1 else ps') 0
     hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
@@ -87,7 +87,7 @@ bestPlacement (p,hc,cc,b) = best $ getPositionsWithState b Nothing
   where
     best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
     better np op = playerScore (p,hc,cc,nb np) > playerScore (p,hc,cc,nb op)
-    nb p'        = updateBoard b (Just White ) p'
+    nb           = updateBoard b (Just White )
 
 -- A new game state produced by placing a piece on the board
 -- Parameters: initial state and position where piece will go.  The piece 
@@ -123,7 +123,7 @@ captureList :: GameState -> [Pos]
 captureList (Player c,hc,cc,b) | not $ null cps = sort cps
                                | otherwise      = sort pps
   where
-    pps       = getPositionsWithState b $ (Just $ invert c)
+    pps       = getPositionsWithState b (Just $ invert c)
     cps       = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
     deleteAll = foldr delete
     hasMill   = all (`elem` pps)
@@ -155,7 +155,7 @@ bestCapture (p,_,_,b) ps = head ps -- TODO
 bestMove :: GameState -> Move
 bestMove (Player c,hc,cc,b) = (from,too) -- dummy
   where
-    pmps p = getPossibleMovePositions (Player c,hc,cc,b) p
-    from   = head [ p' | p' <- getPositionsWithState b (Just c), not $ null $ pmps p' ]
+    pmps   = getPossibleMovePositions (Player c,hc,cc,b)
+    from   = head [ p | p <- getPositionsWithState b (Just c), not $ null $ pmps p ]
     too    = head $ pmps from
    
