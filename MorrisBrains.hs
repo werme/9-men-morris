@@ -78,7 +78,7 @@ status (p,hc,cc,(hps,cps)) | hasLost Human hps    = ComputerWon
 -- legal phase 1 move to make (adding a piece to the board).
 -- Return value: the position where the new piece should go.
 -- Assumes the game is not over, so there will be a legal move.
-bestMove1 :: GameState -> Int
+bestMove1 :: GameState -> Place
 bestMove1 (p,hc,cc,(hps,cps)) = best $ getEmptyPositions (p,hc,cc,(hps,cps))
   where
     better np op = playerScore p (hps,np:cps) > playerScore p (hps,op:cps) 
@@ -89,7 +89,7 @@ bestMove1 (p,hc,cc,(hps,cps)) = best $ getEmptyPositions (p,hc,cc,(hps,cps))
 -- will be  taken from the player whose turn it is.  Assumes the player 
 -- has at least one piece remaining and the position is free.
 -- Returns: new game state.  The player does not change.
-addPiece :: GameState -> Int -> GameState
+addPiece :: GameState -> Place -> GameState
 addPiece (Human, hc, cc, (hss,css)) ns    = (Human, hc-1, cc, (ns:hss,css))
 addPiece (Computer, hc, cc, (hss,css)) ns = (Computer, hc, cc-1, (hss,ns:css))
       
@@ -105,7 +105,7 @@ addPiece (Computer, hc, cc, (hss,css)) ns = (Computer, hc, cc-1, (hss,ns:css))
 -- change.  This is not used by the main module until level 3, but
 -- it's a good helper function for level 2 when capturing pieces.
 -- Returns: new game state
-removePiece :: GameState -> Int -> GameState
+removePiece :: GameState -> Place -> GameState
 removePiece (p,hc,cc,(hss,css)) s = (p,hc,cc,(nhss,ncss))
   where nhss = delete s hss
         ncss = delete s css
@@ -114,7 +114,7 @@ removePiece (p,hc,cc,(hss,css)) s = (p,hc,cc,(nhss,ncss))
 -- the opponent pieces it would be legal to capture.  These are all the
 -- pieces which are not part of a mill.  Exception: if there are no 
 -- pieces outside a mill, then any piece may be captured.  
-captureList :: GameState -> [Int]
+captureList :: GameState -> [Place]
 captureList (p,_,_,b) | not $ null cps = sort cps
                       | otherwise      = sort pps
   where
@@ -126,8 +126,8 @@ captureList (p,_,_,b) | not $ null cps = sort cps
 -- Picks the best capture for the computer to make after a mill 
 -- Parameters: starting state and list of possible captures (assume 
 -- non-empty)
-bestCapture :: GameState -> [Int] -> Int
-bestCapture (p,_,_,b) ps = head ps
+bestCapture :: GameState -> [Place] -> Place
+bestCapture (p,_,_,b) ps = head ps -- TODO
 
 ---------------------------------------------------------------------
 -- FUNCTION NEEDED FOR LEVEL 3 ONLY
