@@ -26,3 +26,6 @@ getPositionState (Board bitBoard) (Pos n) =
             translate 2 = (Just White)
             translate 1 = (Just Black)
             translate 0 = Nothing
+
+blankBoard :: Board
+blankBoard = Board 0
