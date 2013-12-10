@@ -26,10 +26,10 @@ import Data.List
 -- (This function is technically not necessary until level 2, but
 -- it's a very useful helper for level 1)
 millCount :: Player -> Board -> Int
-millCount (Player c) b = pms
-  where 
-    pms     = foldr (\m mc -> if hasMill m then mc + 1 else mc) 0 mills
-    hasMill = all (`elem` (getPositionsWithState b (Just c)))
+millCount (Player c) b = length $ getMills b c
+  -- where 
+  --   pms     = foldr (\m mc -> if hasMill m then mc + 1 else mc) 0 mills
+  --   hasMill = all (`elem` (getPositionsWithState b (Just c)))
 
 twoOutOfThreeCount :: Player -> Board -> Int
 twoOutOfThreeCount (Player c) b = pms
