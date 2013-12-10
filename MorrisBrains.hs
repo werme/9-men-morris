@@ -11,16 +11,7 @@ import MorrisModel
 import MorrisDefinitions
 import Data.List
 
--- this constant defines the level at which we are playing 
--- (must be 1, 2 or 3)
---playLevel :: Int
---playLevel = 3 -- implement level 1 first, then progress to 2 & 3
-
--- Parameters: a board and a player character.  Assume the player is 
--- either humanChar or computerChar.
--- Return value: the number of mills the player has
--- (This function is technically not necessary until level 2, but
--- it's a very useful helper for level 1)
+-- Returns the number of mills on the board for a given player
 millCount :: Board -> Player -> Int
 millCount b (Player c) = length $ getMills b c
 
@@ -43,6 +34,7 @@ playerScore (p,hc,cc,b) = mss + omss + tots + otots
     tots  = 4 * twoOutOfThreeCount b p
     otots = (-5) * (twoOutOfThreeCount b $ opponent p)
 
+-- Returns true if the given move creates a mill for the current player
 addsMill :: GameState -> Move -> Bool
 addsMill (p,bpl,wpl,b) m = millCount b p > millCount nb p 
   where nb = getBoard $ move (p,bpl,wpl,b) m
@@ -51,17 +43,7 @@ addsMill (p,bpl,wpl,b) m = millCount b p > millCount nb p
 move :: GameState -> Move -> GameState
 move s (f,t) = addPiece (removePiece s f) t
 
--- Tests if the game is over.  Returns one of four characters:
---   humanChar: game is over and human player has won
---   computerChar: game is over and computer has won
---   'D': game is over and game is a draw (only possible in levels 1&2)
---   'X': game is not over
--- At levels 1 and 2, the game is over when neither player has a piece
--- left to play.  The winner is the player with the most mills.  It's a
--- draw if the two players have the same number of mills.
--- At level 3, the game is over when one player has less than 3 pieces
--- on the board or can't move any of their pieces.  That player loses.
--- There will be no draws at level 3.
+-- Returns the current state of the game
 status :: GameState -> Status
 status (p,hc,cc,b) | hasLost Black hps = WhiteWon 
                    | hasLost White cps = BlackWon
@@ -72,22 +54,13 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
     looseCondition p ps = length ps < 3 || not (canMove (p,hc,cc,b))
     hasLost c ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
 
--- A new game state produced by placing a piece on the board
--- Parameters: initial state and position where piece will go.  The piece 
--- will be  taken from the player whose turn it is.  Assumes the player 
--- has at least one piece remaining and the position is free.
--- Returns: new game state.  The player does not change.
+-- Adds a piece at the given position for the current player
 addPiece :: GameState -> Pos -> GameState
 addPiece (Player pc,bpl,wpl,b) p = ns pc
   where ns c | c == Black = (Player c,bpl-1,wpl,updateBoard b (Just c) p)
              | c == White = (Player c,bpl,wpl-1,updateBoard b (Just c) p)
 
--- a new game state produced by removing a piece from the board
--- Parameters: initial state, and position from which to remove the piece
--- Assumes the position is currently occupied.  The player does not 
--- change.  This is not used by the main module until level 3, but
--- it's a good helper function for level 2 when capturing pieces.
--- Returns: new game state
+-- Removes a piece from the board at the given position
 removePiece :: GameState -> Pos -> GameState
 removePiece (p,hc,cc,b) s = (p,hc,cc,nb)
   where nb = updateBoard b Nothing s
@@ -116,9 +89,7 @@ movableList (Player c,hc,cc,b) = movable $ getPositionsWithState b (Just c)
 possibleMovesList :: GameState -> [Move]
 possibleMovesList s = undefined
 
--- Given a game state (assuming it's the computer's turn), pick the best 
--- legal phase 1 move to make (adding a piece to the board).
--- Return value: the position where the new piece should go.
+-- Returns the best (hehe) position for a placement move for the current player.
 -- Assumes the game is not over, so there will be a legal move.
 bestPlacement :: GameState -> Pos
 bestPlacement (Player c,bpl,wpl,b) = best $ getPositionsWithState b Nothing
