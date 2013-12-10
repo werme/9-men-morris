@@ -49,7 +49,10 @@ playerScore p b = mss + omss + tots + otots
     otots = (-5) * twoOutOfThreeCount (opponent p) b
 
 movableList :: GameState -> [Place]
-movableList s = undefined
+movableList (p,hc,cc,b) = movable $ getPlayerPositions p b
+  where
+    pmps    = getPossibleMovePositions (p,hc,cc,b)
+    movable = foldr (\p' mps -> pmps p' ++ mps) []
 
 possibleMovesList :: GameState -> [Move]
 possibleMovesList s = undefined
