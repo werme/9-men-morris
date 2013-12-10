@@ -21,12 +21,12 @@ import Data.List
 -- Return value: the number of mills the player has
 -- (This function is technically not necessary until level 2, but
 -- it's a very useful helper for level 1)
-millCount :: Player -> Board -> Int
-millCount (Player c) b = length $ getMills b c
+millCount :: Board -> Player -> Int
+millCount b (Player c) = length $ getMills b c
 
 -- Returns the number of twoOutOfThree:s on the board for the given player 
-twoOutOfThreeCount :: Player -> Board -> Int
-twoOutOfThreeCount (Player c) b = pms
+twoOutOfThreeCount :: Board -> Player -> Int
+twoOutOfThreeCount b (Player c) = pms
   where 
     pps      = getPositionsWithState b (Just c)
     ops      = getPositionsWithState b (Just $ invert c)
@@ -38,10 +38,18 @@ twoOutOfThreeCount (Player c) b = pms
 playerScore :: GameState -> Int
 playerScore (p,hc,cc,b) = mss + omss + tots + otots
   where 
-    mss   = 10 * millCount p b
-    omss  = (-9) * millCount (opponent p) b
-    tots  = 4 * twoOutOfThreeCount p b
-    otots = (-5) * twoOutOfThreeCount (opponent p) b
+    mss   = 10 * millCount b p
+    omss  = (-9) * (millCount b $ opponent p)
+    tots  = 4 * twoOutOfThreeCount b p
+    otots = (-5) * (twoOutOfThreeCount b $ opponent p)
+
+addsMill :: GameState -> Move -> Bool
+addsMill (p,bpl,wpl,b) m = millCount b p > millCount nb p 
+  where nb = getBoard $ move (p,bpl,wpl,b) m
+
+-- Makes the given move for the current player
+move :: GameState -> Move -> GameState
+move s (f,t) = addPiece (removePiece s f) t
 
 -- Tests if the game is over.  Returns one of four characters:
 --   humanChar: game is over and human player has won

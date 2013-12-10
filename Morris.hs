@@ -153,8 +153,8 @@ newMill :: GameState -> GameState -> Bool
 newMill state1 state2 = mills2 > mills1
     where
     p = getPlayer state1 -- the player who made the move
-    mills1 = millCount p $ getBoard state1
-    mills2 = millCount p $ getBoard state2
+    mills1 = millCount (getBoard state1) p
+    mills2 = millCount (getBoard state2) p
     
     
 -- Prompts human player to pick an unoccupied position (without listing 
