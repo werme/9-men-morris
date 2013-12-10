@@ -60,20 +60,13 @@ getHumanCount (_,hc,_,_) = hc
 getCompCount :: GameState -> Int
 getCompCount (_,_,cc,_) = cc
 
-getBlackPositions :: GameState -> [Pos]
-getBlackPositions (_,_,_,b) = getPositionsWithState b (Just Black)
-
-getWhitePositions :: GameState -> [Pos]
-getWhitePositions (_,_,_,b) = getPositionsWithState b (Just White)
-
-getEmptyPositions :: GameState -> [Pos]
-getEmptyPositions (_,_,_,b) =
-    filter (\p -> Nothing == getPositionState b p) positions
+getPositions :: GameState -> Maybe Color -> [Pos]
+getPositions (_,_,_,b) c = getPositionsWithState b c
 
 getPossibleMovePositions :: GameState -> Pos -> [Pos]
 getPossibleMovePositions state p = pps
   where
-    eps = getEmptyPositions state
+    eps = getPositions state Nothing
     pps = [ pp | pp <- eps, isAdjacent p pp ]
 
 playerMills :: GameState -> [[Pos]]
@@ -102,14 +95,4 @@ type Move = (Pos,Pos)
 switchPlayer :: GameState -> GameState
 switchPlayer (p, hc, cc, b) = (opponent p, hc, cc, b)
 
--- The set of all pairs of adjacent squares (meaning a piece can move 
--- directly from one to the other). Each adjacent pair is given as a 
--- 2-element list. Each pair is given in one order only. Observation: 
--- two adjacent squares must belong to a mill.
-adjacentSpaces :: [[Pos]]
-adjacentSpaces = [[x,y]|[x,y,_] <- mills] ++ [[x,y]|[_,x,y] <- mills]
-
----- adjacent x y is true if x and y are adjacent
---isAdjacent :: Pos -> Pos -> Bool
---isAdjacent x y = elem [x,y] adjacentSpaces || elem [y,x] adjacentSpaces
 

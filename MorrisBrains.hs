@@ -83,7 +83,7 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
 -- Return value: the position where the new piece should go.
 -- Assumes the game is not over, so there will be a legal move.
 bestMove1 :: GameState -> Pos
-bestMove1 (p,hc,cc,b) = best $ getEmptyPositions (p,hc,cc,b)
+bestMove1 (p,hc,cc,b) = best $ getPositions (p,hc,cc,b) Nothing
   where
     better np op = playerScore (p,hc,cc,nb np) > playerScore (p,hc,cc,nb op)
     nb p'        = updateBoard b (Just White ) p'
