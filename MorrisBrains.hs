@@ -27,10 +27,8 @@ import Data.List
 -- it's a very useful helper for level 1)
 millCount :: Player -> Board -> Int
 millCount (Player c) b = length $ getMills b c
-  -- where 
-  --   pms     = foldr (\m mc -> if hasMill m then mc + 1 else mc) 0 mills
-  --   hasMill = all (`elem` (getPositionsWithState b (Just c)))
 
+-- Returns the number of twoOutOfThree:s on the board for the given player 
 twoOutOfThreeCount :: Player -> Board -> Int
 twoOutOfThreeCount (Player c) b = pms
   where 
@@ -40,6 +38,7 @@ twoOutOfThreeCount (Player c) b = pms
     mps      = foldr (\p' ps' -> if p' `elem` pps then ps' + 1 else ps') 0
     hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
 
+-- Returns the total board score of the current player. See code for details
 playerScore :: GameState -> Int
 playerScore (p,hc,cc,b) = mss + omss + tots + otots
   where 
@@ -47,15 +46,6 @@ playerScore (p,hc,cc,b) = mss + omss + tots + otots
     omss  = (-9) * millCount (opponent p) b
     tots  = 4 * twoOutOfThreeCount p b
     otots = (-5) * twoOutOfThreeCount (opponent p) b
-
-movableList :: GameState -> [Pos]
-movableList (Player c,hc,cc,b) = movable $ getPositionsWithState b (Just c)
-  where
-    pmps    = getPossibleMovePositions (Player c,hc,cc,b)
-    movable = foldr (\p' mps -> pmps p' ++ mps) []
-
-possibleMovesList :: GameState -> [Move]
-possibleMovesList s = undefined
 
 -- Tests if the game is over.  Returns one of four characters:
 --   humanChar: game is over and human player has won
@@ -78,17 +68,6 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
     looseCondition p ps = length ps < 3 || not (canMove (p,hc,cc,b))
     hasLost c ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
 
--- Given a game state (assuming it's the computer's turn), pick the best 
--- legal phase 1 move to make (adding a piece to the board).
--- Return value: the position where the new piece should go.
--- Assumes the game is not over, so there will be a legal move.
-bestPlacement :: GameState -> Pos
-bestPlacement (p,hc,cc,b) = best $ getPositionsWithState b Nothing
-  where
-    best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
-    better np op = playerScore (p,hc,cc,nb np) > playerScore (p,hc,cc,nb op)
-    nb           = updateBoard b (Just White )
-
 -- A new game state produced by placing a piece on the board
 -- Parameters: initial state and position where piece will go.  The piece 
 -- will be  taken from the player whose turn it is.  Assumes the player 
@@ -98,12 +77,6 @@ addPiece :: GameState -> Pos -> GameState
 addPiece (Player pc,bpl,wpl,b) p = ns pc
   where ns c | c == Black = (Player c,bpl-1,wpl,updateBoard b (Just c) p)
              | c == White = (Player c,bpl,wpl-1,updateBoard b (Just c) p)
-      
----------------------------------------------------------------------
--- FUNCTIONS NEEDED FOR LEVELS 2&3 ONLY
--- (Level 1 will not use these functions, so the dummy
---  values won't affect the game)
----------------------------------------------------------------------
 
 -- a new game state produced by removing a piece from the board
 -- Parameters: initial state, and position from which to remove the piece
@@ -127,7 +100,30 @@ captureList (Player c,hc,cc,b) | not $ null cps = sort cps
     cps       = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
     deleteAll = foldr delete
     hasMill   = all (`elem` pps)
-    
+
+-- Returns a list of all positions with movable pieces for the current player
+movableList :: GameState -> [Pos]
+movableList (Player c,hc,cc,b) = movable $ getPositionsWithState b (Just c)
+  where
+    pmps    = getPossibleMovePositions (Player c,hc,cc,b)
+    movable = foldr (\p' mps -> pmps p' ++ mps) []
+
+-- Returns a list of all possible moves for the current player
+possibleMovesList :: GameState -> [Move]
+possibleMovesList s = undefined
+
+-- Given a game state (assuming it's the computer's turn), pick the best 
+-- legal phase 1 move to make (adding a piece to the board).
+-- Return value: the position where the new piece should go.
+-- Assumes the game is not over, so there will be a legal move.
+bestPlacement :: GameState -> Pos
+bestPlacement (Player c,bpl,wpl,b) = best $ getPositionsWithState b Nothing
+  where
+    best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
+    better np op = playerScore (Player c,bpl,wpl,newBoard np) > 
+                   playerScore (Player c,bpl,wpl,newBoard op)
+    newBoard     = updateBoard b (Just c)
+
 -- Picks the best capture for the computer to make after a mill 
 -- Parameters: starting state and list of possible captures (assume 
 -- non-empty)
