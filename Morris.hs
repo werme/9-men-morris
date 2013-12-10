@@ -164,8 +164,8 @@ newMill state1 state2 = mills2 > mills1
 -- Return value: the position chosen.
 playerChoice :: Board -> IO Pos
 playerChoice b = do
-    let humans = getPositionsWithState b Black
-    let computers = getPositionsWithState b White
+    let humans = getPositionsWithState b (Just Black)
+    let computers = getPositionsWithState b (Just White)
     putStr "pick a position for your next piece: "
     input <- getLine
     if (not (allDigits input)) then do
@@ -278,8 +278,8 @@ boardString board = concat (map combineStrings (zip displayStrings displayPaddin
 -- Parameters: a board and a position (int in 1..24)
 positionStr :: Board -> Pos -> String
 positionStr b (Pos pos)
-    | elem (Pos pos) (getPositionsWithState b Black) = [getPlayerMark (Player Black)]
-    | elem (Pos pos) (getPositionsWithState b White) = [getPlayerMark (Player White)]
+    | elem (Pos pos) (getPositionsWithState b (Just Black)) = [getPlayerMark (Player Black)]
+    | elem (Pos pos) (getPositionsWithState b (Just White)) = [getPlayerMark (Player White)]
     | otherwise = show pos
     
 -- Combines a position string with the padding that comes after it.

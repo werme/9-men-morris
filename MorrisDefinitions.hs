@@ -61,10 +61,10 @@ getCompCount :: GameState -> Int
 getCompCount (_,_,cc,_) = cc
 
 getBlackPositions :: GameState -> [Pos]
-getBlackPositions (_,_,_,b) = getPositionsWithState b Black
+getBlackPositions (_,_,_,b) = getPositionsWithState b (Just Black)
 
 getWhitePositions :: GameState -> [Pos]
-getWhitePositions (_,_,_,b) = getPositionsWithState b White
+getWhitePositions (_,_,_,b) = getPositionsWithState b (Just White)
 
 getEmptyPositions :: GameState -> [Pos]
 getEmptyPositions (_,_,_,b) =
@@ -79,13 +79,13 @@ getPossibleMovePositions state p = pps
 playerMills :: GameState -> [[Pos]]
 playerMills (Player c,_,_,b) = pms
   where 
-    ps      = getPositionsWithState b c
+    ps      = getPositionsWithState b (Just c)
     pms     = foldr (\m ms -> if hasMill m then m:ms else ms) [] mills
     hasMill = all (`elem` ps)
 
 canMove :: GameState -> Bool
 canMove s = any (not . null . getPossibleMovePositions s) pps
-  where pps = getPositionsWithState (getBoard s) (getPlayerColor s)
+  where pps = getPositionsWithState (getBoard s) (Just (getPlayerColor s))
 
 isPlacingPhase :: GameState -> Bool
 isPlacingPhase (_,hc,cc,_) = hc > 0 || cc > 0
@@ -109,7 +109,7 @@ switchPlayer (p, hc, cc, b) = (opponent p, hc, cc, b)
 adjacentSpaces :: [[Pos]]
 adjacentSpaces = [[x,y]|[x,y,_] <- mills] ++ [[x,y]|[_,x,y] <- mills]
 
--- adjacent x y is true if x and y are adjacent
-isAdjacent :: Pos -> Pos -> Bool
-isAdjacent x y = elem [x,y] adjacentSpaces || elem [y,x] adjacentSpaces
+---- adjacent x y is true if x and y are adjacent
+--isAdjacent :: Pos -> Pos -> Bool
+--isAdjacent x y = elem [x,y] adjacentSpaces || elem [y,x] adjacentSpaces
 

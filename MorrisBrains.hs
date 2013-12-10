@@ -29,13 +29,13 @@ millCount :: Player -> Board -> Int
 millCount (Player c) b = pms
   where 
     pms     = foldr (\m mc -> if hasMill m then mc + 1 else mc) 0 mills
-    hasMill = all (`elem` (getPositionsWithState b c))
+    hasMill = all (`elem` (getPositionsWithState b (Just c)))
 
 twoOutOfThreeCount :: Player -> Board -> Int
 twoOutOfThreeCount (Player c) b = pms
   where 
-    pps      = getPositionsWithState b c
-    ops      = getPositionsWithState b $ invert c
+    pps      = getPositionsWithState b (Just c)
+    ops      = getPositionsWithState b $ (Just $ invert c)
     pms      = foldr (\m mc -> if hasTwo m then mc + 1 else mc) 0 mills
     mps      = foldr (\p' ps' -> if p' `elem` pps then ps' + 1 else ps') 0
     hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
@@ -49,7 +49,7 @@ playerScore (p,hc,cc,b) = mss + omss + tots + otots
     otots = (-5) * twoOutOfThreeCount (opponent p) b
 
 movableList :: GameState -> [Pos]
-movableList (Player c,hc,cc,b) = movable $ getPositionsWithState b c
+movableList (Player c,hc,cc,b) = movable $ getPositionsWithState b (Just c)
   where
     pmps    = getPossibleMovePositions (Player c,hc,cc,b)
     movable = foldr (\p' mps -> pmps p' ++ mps) []
@@ -73,8 +73,8 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
                    | hasLost White cps = BlackWon
                    | otherwise         = Ongoing 
   where 
-    hps                 = getPositionsWithState b Black
-    cps                 = getPositionsWithState b White
+    hps                 = getPositionsWithState b (Just Black)
+    cps                 = getPositionsWithState b (Just White)
     looseCondition p ps = length ps < 3 || not (canMove (p,hc,cc,b))
     hasLost c ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
     
@@ -122,7 +122,7 @@ captureList :: GameState -> [Pos]
 captureList (Player c,hc,cc,b) | not $ null cps = sort cps
                         | otherwise      = sort pps
   where
-    pps       = getPositionsWithState b $ invert c
+    pps       = getPositionsWithState b $ (Just $ invert c)
     cps       = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
     deleteAll = foldr delete
     hasMill   = all (`elem` pps)
@@ -155,6 +155,6 @@ bestMove2 :: GameState -> Move
 bestMove2 (Player c,hc,cc,b) = (from,too) -- dummy
   where
     pmps p = getPossibleMovePositions (Player c,hc,cc,b) p
-    from   = head [ p' | p' <- getPositionsWithState b c, not $ null $ pmps p' ]
+    from   = head [ p' | p' <- getPositionsWithState b (Just c), not $ null $ pmps p' ]
     too    = head $ pmps from
    
