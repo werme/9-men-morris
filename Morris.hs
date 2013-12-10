@@ -13,8 +13,7 @@ import Data.Char
 
 -- starting state: Human moves first, each player has 9 pieces, and the board is empty
 initialState :: GameState
-initialState = (Human, 9, 9, blankBoard)
---initialState = (Human, 9, 9, ([],[]))
+initialState = (Player Black, 9, 9, blankBoard)
 
 -- Play the game from the initial state
 morris :: IO ()
@@ -27,9 +26,9 @@ playGame :: GameState -> IO ()
 playGame state = 
     do
         let currentStatus = (status state) 
-        if (currentStatus == HumanWon) then 
+        if (currentStatus == BlackWon) then 
             putStrLn "YOU WIN!"
-        else if (currentStatus == ComputerWon) then
+        else if (currentStatus == WhiteWon) then
             putStrLn "YOU LOSE!"
         else if (isPlacingPhase state) then
             playPhase1 state -- placing pieces on the board
@@ -41,7 +40,7 @@ playGame state =
 -- (phase 1).  Parameter is the current game state      
 playPhase1 :: GameState -> IO ()
 playPhase1 state =
-    if ((getPlayer state) == Human)  then do -- player's turn
+    if ((getPlayer state) == (Player Black))  then do -- player's turn
         putStrLn "\nYOUR TURN"
         putStrLn ("you have " ++ (show (getHumanCount state))
             ++ " piece(s) left")
@@ -120,7 +119,7 @@ computerMill state = do
 -- Parameter is starting state.
 playPhase2 :: GameState -> IO ()
 playPhase2 state = 
-    if ((getPlayer state) == Human) then do -- human player's turn
+    if ((getPlayer state) == (Player Black)) then do -- human player's turn
         putStrLn "\nYOUR TURN"
         (fromPos,toPos) <- choosePhase2Move state
         let state2 = removePiece state fromPos
@@ -213,7 +212,7 @@ choosePosition prompt choices = do
 
 choosePhase2Move :: GameState -> IO (Pos,Pos)
 choosePhase2Move state = do
-    fromPos <- choosePosition "position to move from" (getHumanPositions state)
+    fromPos <- choosePosition "position to move from" (getBlackPositions state)
     toPos <- choosePosition "position to move to" (getPossibleMovePositions state fromPos)
     if not (isAdjacent fromPos toPos) then do
             putStrLn "these two positions are not adjacent"
@@ -279,8 +278,8 @@ boardString board = concat (map combineStrings (zip displayStrings displayPaddin
 -- Parameters: a board and a position (int in 1..24)
 positionStr :: Board -> Pos -> String
 positionStr b (Pos pos)
-    | elem (Pos pos) (getPositionsWithState b Black) = [getPlayerMark Human]
-    | elem (Pos pos) (getPositionsWithState b White) = [getPlayerMark Computer]
+    | elem (Pos pos) (getPositionsWithState b Black) = [getPlayerMark (Player Black)]
+    | elem (Pos pos) (getPositionsWithState b White) = [getPlayerMark (Player White)]
     | otherwise = show pos
     
 -- Combines a position string with the padding that comes after it.

@@ -11,7 +11,7 @@ import Data.List
 -- You may change them to two other characters, except don't use 'X' or 'D' or digits, as 
 -- these are used for other purposes in the code and the output.
 
-data Player = Human | Computer
+newtype Player = Player Color
   deriving (Eq, Show)
 
 -- A board is described by a tuple of two lists: the human player's squares and the 
@@ -28,21 +28,28 @@ data Player = Human | Computer
 -- 4. the board
 type GameState = (Player, Int, Int, Board)
 
-data Status = HumanWon | ComputerWon | Ongoing
+data Status = BlackWon | WhiteWon | Ongoing
   deriving (Eq)
 
 getPlayerMark :: Player -> Char
-getPlayerMark Human    = 'X'
-getPlayerMark Computer = 'O'
+getPlayerMark (Player Black) = 'X'
+getPlayerMark (Player White) = 'O'
 
 opponent :: Player -> Player
-opponent Human    = Computer
-opponent Computer = Human
+opponent (Player Black) = (Player White)
+opponent (Player White) = (Player Black)
+
+invert :: Color -> Color
+invert Black = White
+invert White = Black
 
 -- extract parts of a state
   
 getPlayer :: GameState -> Player
 getPlayer (p,_,_,_) = p
+
+getPlayerColor :: GameState -> Color
+getPlayerColor (Player c,_,_,_) = c
 
 getBoard :: GameState -> Board
 getBoard (_,_,_,b) = b
@@ -53,17 +60,11 @@ getHumanCount (_,hc,_,_) = hc
 getCompCount :: GameState -> Int
 getCompCount (_,_,cc,_) = cc
 
-getHumanPositions :: GameState -> [Pos]
-getHumanPositions (_,_,_,b) = getPositionsWithState b Black
--- getHumanPositions (_,_,_,(hps,_)) = sort hps
+getBlackPositions :: GameState -> [Pos]
+getBlackPositions (_,_,_,b) = getPositionsWithState b Black
 
-getCompPositions :: GameState -> [Pos]
-getCompPositions (_,_,_,b) = getPositionsWithState b White
--- getCompPositions (_,_,_,(_,cps)) = cps
-
-getPlayerPositions :: Player -> Board -> [Pos]
-getPlayerPositions Human b = getPositionsWithState b Black 
-getPlayerPositions Computer b = getPositionsWithState b White 
+getWhitePositions :: GameState -> [Pos]
+getWhitePositions (_,_,_,b) = getPositionsWithState b White
 
 getEmptyPositions :: GameState -> [Pos]
 getEmptyPositions (_,_,_,b) =
@@ -76,16 +77,15 @@ getPossibleMovePositions state p = pps
     pps = [ pp | pp <- eps, isAdjacent p pp ]
 
 playerMills :: GameState -> [[Pos]]
-playerMills (p,_,_,b) = pms
+playerMills (Player c,_,_,b) = pms
   where 
-    ps      = getPlayerPositions p b
+    ps      = getPositionsWithState b c
     pms     = foldr (\m ms -> if hasMill m then m:ms else ms) [] mills
     hasMill = all (`elem` ps)
 
 canMove :: GameState -> Bool
 canMove s = any (not . null . getPossibleMovePositions s) pps
-  where p   = getPlayer s
-        pps = getPlayerPositions p $ getBoard s
+  where pps = getPositionsWithState (getBoard s) (getPlayerColor s)
 
 isPlacingPhase :: GameState -> Bool
 isPlacingPhase (_,hc,cc,_) = hc > 0 || cc > 0
@@ -100,8 +100,7 @@ type Move = (Pos,Pos)
 -- Given a game state, returns an equivalent game state where it's the other
 -- player's turn
 switchPlayer :: GameState -> GameState
-switchPlayer (Human, hc, cc, b)    = (Computer, hc, cc, b)
-switchPlayer (Computer, hc, cc, b) = (Human, hc, cc, b)
+switchPlayer (p, hc, cc, b) = (opponent p, hc, cc, b)
 
 -- The set of all pairs of adjacent squares (meaning a piece can move 
 -- directly from one to the other). Each adjacent pair is given as a 

@@ -26,19 +26,18 @@ import Data.List
 -- (This function is technically not necessary until level 2, but
 -- it's a very useful helper for level 1)
 millCount :: Player -> Board -> Int
-millCount p b = pms
+millCount (Player c) b = pms
   where 
-    ps      = getPlayerPositions p b
     pms     = foldr (\m mc -> if hasMill m then mc + 1 else mc) 0 mills
-    hasMill = all (`elem` ps)
+    hasMill = all (`elem` (getPositionsWithState b c))
 
 twoOutOfThreeCount :: Player -> Board -> Int
-twoOutOfThreeCount p b = pms
+twoOutOfThreeCount (Player c) b = pms
   where 
-    ps       = getPlayerPositions p b
-    ops      = getPlayerPositions (opponent p) b
+    pps      = getPositionsWithState b c
+    ops      = getPositionsWithState b $ invert c
     pms      = foldr (\m mc -> if hasTwo m then mc + 1 else mc) 0 mills
-    mps      = foldr (\p' ps' -> if p' `elem` ps then ps' + 1 else ps') 0
+    mps      = foldr (\p' ps' -> if p' `elem` pps then ps' + 1 else ps') 0
     hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
 
 playerScore :: GameState -> Int
@@ -50,9 +49,9 @@ playerScore (p,hc,cc,b) = mss + omss + tots + otots
     otots = (-5) * twoOutOfThreeCount (opponent p) b
 
 movableList :: GameState -> [Pos]
-movableList (p,hc,cc,b) = movable $ getPlayerPositions p b
+movableList (Player c,hc,cc,b) = movable $ getPositionsWithState b c
   where
-    pmps    = getPossibleMovePositions (p,hc,cc,b)
+    pmps    = getPossibleMovePositions (Player c,hc,cc,b)
     movable = foldr (\p' mps -> pmps p' ++ mps) []
 
 possibleMovesList :: GameState -> [Move]
@@ -70,14 +69,14 @@ possibleMovesList s = undefined
 -- on the board or can't move any of their pieces.  That player loses.
 -- There will be no draws at level 3.
 status :: GameState -> Status
-status (p,hc,cc,b) | hasLost Human hps    = ComputerWon 
-                   | hasLost Computer cps = HumanWon
-                   | otherwise            = Ongoing 
+status (p,hc,cc,b) | hasLost Black hps = WhiteWon 
+                   | hasLost White cps = BlackWon
+                   | otherwise         = Ongoing 
   where 
     hps                 = getPositionsWithState b Black
     cps                 = getPositionsWithState b White
     looseCondition p ps = length ps < 3 || not (canMove (p,hc,cc,b))
-    hasLost p ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
+    hasLost c ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
     
 -- Given a game state (assuming it's the computer's turn), pick the best 
 -- legal phase 1 move to make (adding a piece to the board).
@@ -96,8 +95,8 @@ bestMove1 (p,hc,cc,b) = best $ getEmptyPositions (p,hc,cc,b)
 -- has at least one piece remaining and the position is free.
 -- Returns: new game state.  The player does not change.
 addPiece :: GameState -> Pos -> GameState
-addPiece (Human,hc,cc,b) p    = (Human,hc-1,cc,updateBoard b (Just Black) p)
-addPiece (Computer,hc,cc,b) p = (Computer,hc,cc-1,updateBoard b (Just White) p)
+addPiece (Player c,hc,cc,b) p = (Player c,hc-1,cc,updateBoard b (Just c) p)
+addPiece (Player c,hc,cc,b) p = (Player c,hc,cc-1,updateBoard b (Just c) p)
       
 ---------------------------------------------------------------------
 -- FUNCTIONS NEEDED FOR LEVELS 2&3 ONLY
@@ -120,10 +119,10 @@ removePiece (p,hc,cc,b) s = (p,hc,cc,nb)
 -- pieces which are not part of a mill.  Exception: if there are no 
 -- pieces outside a mill, then any piece may be captured.  
 captureList :: GameState -> [Pos]
-captureList (p,_,_,b) | not $ null cps = sort cps
-                      | otherwise      = sort pps
+captureList (Player c,hc,cc,b) | not $ null cps = sort cps
+                        | otherwise      = sort pps
   where
-    pps       = getPlayerPositions (opponent p) b
+    pps       = getPositionsWithState b $ invert c
     cps       = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
     deleteAll = foldr delete
     hasMill   = all (`elem` pps)
@@ -153,9 +152,9 @@ bestCapture (p,_,_,b) ps = head ps -- TODO
 --    C. Pick the move that gives you the state with the best score, as 
 --       in phase 1.
 bestMove2 :: GameState -> Move
-bestMove2 (p,hc,cc,b) = (from,too) -- dummy
+bestMove2 (Player c,hc,cc,b) = (from,too) -- dummy
   where
-    pmps = getPossibleMovePositions
-    from = head [ p'' | p'' <- getPlayerPositions p b, not $ null $ pmps (p,hc,cc,b) p'' ]
-    too  = head $ pmps (p,hc,cc,b) from
+    pmps p = getPossibleMovePositions (Player c,hc,cc,b) p
+    from   = head [ p' | p' <- getPositionsWithState b c, not $ null $ pmps p' ]
+    too    = head $ pmps from
    
