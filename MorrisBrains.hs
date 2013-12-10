@@ -77,7 +77,7 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
     cps                 = getPositionsWithState b (Just White)
     looseCondition p ps = length ps < 3 || not (canMove (p,hc,cc,b))
     hasLost c ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
-    
+
 -- Given a game state (assuming it's the computer's turn), pick the best 
 -- legal phase 1 move to make (adding a piece to the board).
 -- Return value: the position where the new piece should go.
@@ -85,9 +85,9 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
 bestPlacement :: GameState -> Pos
 bestPlacement (p,hc,cc,b) = best $ getPositionsWithState b Nothing
   where
+    best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
     better np op = playerScore (p,hc,cc,nb np) > playerScore (p,hc,cc,nb op)
     nb p'        = updateBoard b (Just White ) p'
-    best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
 
 -- A new game state produced by placing a piece on the board
 -- Parameters: initial state and position where piece will go.  The piece 
@@ -95,8 +95,9 @@ bestPlacement (p,hc,cc,b) = best $ getPositionsWithState b Nothing
 -- has at least one piece remaining and the position is free.
 -- Returns: new game state.  The player does not change.
 addPiece :: GameState -> Pos -> GameState
-addPiece (Player c,hc,cc,b) p = (Player c,hc-1,cc,updateBoard b (Just c) p)
-addPiece (Player c,hc,cc,b) p = (Player c,hc,cc-1,updateBoard b (Just c) p)
+addPiece (Player pc,bpl,wpl,b) p = ns pc
+  where ns c | c == Black = (Player c,bpl-1,wpl,updateBoard b (Just c) p)
+             | c == White = (Player c,bpl,wpl-1,updateBoard b (Just c) p)
       
 ---------------------------------------------------------------------
 -- FUNCTIONS NEEDED FOR LEVELS 2&3 ONLY

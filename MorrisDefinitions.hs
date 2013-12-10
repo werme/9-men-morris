@@ -62,6 +62,7 @@ getPossibleMovePositions state p = pps
     eps = getPositions state Nothing
     pps = [ pp | pp <- eps, isAdjacent p pp ]
 
+-- Returns true if the current player can make a move
 canMove :: GameState -> Bool
 canMove s = any (not . null . getPossibleMovePositions s) pps
   where pps = getPositionsWithState (getBoard s) (Just (getPlayerColor s))
