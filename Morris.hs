@@ -6,13 +6,15 @@
 -- CISC 260, Winter 2011
 
 module Morris where 
+import MorrisModel
 import MorrisDefinitions
 import MorrisBrains
 import Data.Char
 
 -- starting state: Human moves first, each player has 9 pieces, and the board is empty
 initialState :: GameState
-initialState = (Human, 9, 9, ([],[]))
+initialState = (Human, 9, 9, blankBoard)
+--initialState = (Human, 9, 9, ([],[]))
 
 -- Play the game from the initial state
 morris :: IO ()
@@ -161,33 +163,35 @@ newMill state1 state2 = mills2 > mills1
 -- Parameter: the board 
 -- Repeats until player picks a legal position.
 -- Return value: the position chosen.
-playerChoice :: Board -> IO Int
-playerChoice (humans,computers) = do
+playerChoice :: Board -> IO Pos
+playerChoice b = do
+    let humans = getPositionsWithState b Black
+    let computers = getPositionsWithState b White
     putStr "pick a position for your next piece: "
     input <- getLine
     if (not (allDigits input)) then do
             putStrLn "input must be a positive integer"
-            choice <- (playerChoice (humans,computers))
+            choice <- (playerChoice b)
             return choice
     else do
         let position = (read input) :: Int
-        if (position < 1 || position > 24) then do
+        if (position < 0 || position > 23) then do
                 putStrLn "illegal position (must be in 1..24)"
-                choice <- (playerChoice (humans,computers))
+                choice <- (playerChoice b)
                 return choice
-        else if (elem position computers || elem position humans) then do
+        else if (elem (Pos position) computers || elem (Pos position) humans) then do
             putStrLn "illegal choice: that position is already taken"
-            choice <- (playerChoice (humans,computers))
+            choice <- (playerChoice b)
             return choice
         else do
-            return position
+            return (Pos position)
             
             
 -- Prompts player to pick a position from a list of choices
 -- Parameters: a prompt and a list of choices
 -- Return value: the player's choice, guaranteed to be in the list of 
 -- choices
-choosePosition :: String -> [Int] -> IO Int
+choosePosition :: String -> [Pos] -> IO Pos
 choosePosition prompt choices = do
     putStr (prompt ++ ": " ++ show choices ++ "): ")
     input <- getLine
@@ -197,17 +201,17 @@ choosePosition prompt choices = do
             return choice
     else do
         let position = (read input) :: Int
-        if (not (elem position choices)) then do
+        if (not (elem (Pos position) choices)) then do
                 putStrLn ((show position) ++ " is not one of the choices")
                 choice <- choosePosition prompt choices
                 return choice
         else do
-            return position
+            return (Pos position)
             
 -- Prompts human player for a phase 2 move (from occupied position to 
 -- unoccupied)
 
-choosePhase2Move :: GameState -> IO (Int,Int)
+choosePhase2Move :: GameState -> IO (Pos,Pos)
 choosePhase2Move state = do
     fromPos <- choosePosition "position to move from" (getHumanPositions state)
     toPos <- choosePosition "position to move to" (getPossibleMovePositions state fromPos)
@@ -267,16 +271,16 @@ boardString board = concat (map combineStrings (zip displayStrings displayPaddin
     where
     -- a list of short strings representing the contents of each board 
     -- position
-    displayStrings = map (positionStr board) [1..24]
+    displayStrings = map (positionStr board) positions
     
 -- A string to represent a position on the board.  This will be
 -- "B" or "W" or a string form of the position if it is unoccupied.  
 -- The result will be of length 1 or 2.
 -- Parameters: a board and a position (int in 1..24)
-positionStr :: Board -> Int -> String
-positionStr (humans, computers) pos
-    | elem pos humans = [getPlayerMark Human]
-    | elem pos computers = [getPlayerMark Computer]
+positionStr :: Board -> Pos -> String
+positionStr b (Pos pos)
+    | elem (Pos pos) (getPositionsWithState b Black) = [getPlayerMark Human]
+    | elem (Pos pos) (getPositionsWithState b White) = [getPlayerMark Computer]
     | otherwise = show pos
     
 -- Combines a position string with the padding that comes after it.

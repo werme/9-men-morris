@@ -7,6 +7,7 @@
 -- CISC 260, winter 2011
 -- M. Lamb
 module MorrisBrains where
+import MorrisModel
 import MorrisDefinitions
 import Data.List
 
@@ -48,7 +49,7 @@ playerScore (p,hc,cc,b) = mss + omss + tots + otots
     tots  = 4 * twoOutOfThreeCount p b
     otots = (-5) * twoOutOfThreeCount (opponent p) b
 
-movableList :: GameState -> [Place]
+movableList :: GameState -> [Pos]
 movableList (p,hc,cc,b) = movable $ getPlayerPositions p b
   where
     pmps    = getPossibleMovePositions (p,hc,cc,b)
@@ -69,22 +70,24 @@ possibleMovesList s = undefined
 -- on the board or can't move any of their pieces.  That player loses.
 -- There will be no draws at level 3.
 status :: GameState -> Status
-status (p,hc,cc,(hps,cps)) | hasLost Human hps    = ComputerWon 
-                           | hasLost Computer cps = HumanWon
-                           | otherwise            = Ongoing 
+status (p,hc,cc,b) | hasLost Human hps    = ComputerWon 
+                   | hasLost Computer cps = HumanWon
+                   | otherwise            = Ongoing 
   where 
-    s                   = (p,hc,cc,(hps,cps))
-    looseCondition p ps = length ps < 3 || not (canMove s)
-    hasLost p ps        = isMovePhase s && looseCondition p ps
+    hps                 = getPositionsWithState b Black
+    cps                 = getPositionsWithState b White
+    looseCondition p ps = length ps < 3 || not (canMove (p,hc,cc,b))
+    hasLost p ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
     
 -- Given a game state (assuming it's the computer's turn), pick the best 
 -- legal phase 1 move to make (adding a piece to the board).
 -- Return value: the position where the new piece should go.
 -- Assumes the game is not over, so there will be a legal move.
-bestMove1 :: GameState -> Place
-bestMove1 (p,hc,cc,(hps,cps)) = best $ getEmptyPositions (p,hc,cc,(hps,cps))
+bestMove1 :: GameState -> Pos
+bestMove1 (p,hc,cc,b) = best $ getEmptyPositions (p,hc,cc,b)
   where
-    better np op = playerScore (p,hc,cc,(hps,np:cps)) > playerScore (p,hc,cc,(hps,op:cps)) 
+    better np op = playerScore (p,hc,cc,nb np) > playerScore (p,hc,cc,nb op)
+    nb p'        = updateBoard b (Just White ) p'
     best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
 
 -- A new game state produced by placing a piece on the board
@@ -92,9 +95,9 @@ bestMove1 (p,hc,cc,(hps,cps)) = best $ getEmptyPositions (p,hc,cc,(hps,cps))
 -- will be  taken from the player whose turn it is.  Assumes the player 
 -- has at least one piece remaining and the position is free.
 -- Returns: new game state.  The player does not change.
-addPiece :: GameState -> Place -> GameState
-addPiece (Human, hc, cc, (hss,css)) ns    = (Human, hc-1, cc, (ns:hss,css))
-addPiece (Computer, hc, cc, (hss,css)) ns = (Computer, hc, cc-1, (hss,ns:css))
+addPiece :: GameState -> Pos -> GameState
+addPiece (Human,hc,cc,b) p    = (Human,hc-1,cc,updateBoard b (Just Black) p)
+addPiece (Computer,hc,cc,b) p = (Computer,hc,cc-1,updateBoard b (Just White) p)
       
 ---------------------------------------------------------------------
 -- FUNCTIONS NEEDED FOR LEVELS 2&3 ONLY
@@ -108,16 +111,15 @@ addPiece (Computer, hc, cc, (hss,css)) ns = (Computer, hc, cc-1, (hss,ns:css))
 -- change.  This is not used by the main module until level 3, but
 -- it's a good helper function for level 2 when capturing pieces.
 -- Returns: new game state
-removePiece :: GameState -> Place -> GameState
-removePiece (p,hc,cc,(hss,css)) s = (p,hc,cc,(nhss,ncss))
-  where nhss = delete s hss
-        ncss = delete s css
+removePiece :: GameState -> Pos -> GameState
+removePiece (p,hc,cc,b) s = (p,hc,cc,nb)
+  where nb = updateBoard b Nothing s
 
 -- Given a game state after a player has made a mill, returns a list of
 -- the opponent pieces it would be legal to capture.  These are all the
 -- pieces which are not part of a mill.  Exception: if there are no 
 -- pieces outside a mill, then any piece may be captured.  
-captureList :: GameState -> [Place]
+captureList :: GameState -> [Pos]
 captureList (p,_,_,b) | not $ null cps = sort cps
                       | otherwise      = sort pps
   where
@@ -129,9 +131,9 @@ captureList (p,_,_,b) | not $ null cps = sort cps
 -- Picks the best capture for the computer to make after a mill 
 -- Parameters: starting state and list of possible captures (assume 
 -- non-empty)
-bestCapture :: GameState -> [Place] -> Place
+bestCapture :: GameState -> [Pos] -> Pos
 bestCapture (p,_,_,b) ps = head ps -- TODO
-
+ 
 ---------------------------------------------------------------------
 -- FUNCTION NEEDED FOR LEVEL 3 ONLY
 -- (Levels 1&2 will not use this function, so the dummy
