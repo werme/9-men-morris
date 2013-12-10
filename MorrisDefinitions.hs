@@ -10,16 +10,6 @@ import Data.List
 -- You may change them to two other characters, except don't use 'X' or 'D' or digits, as 
 -- these are used for other purposes in the code and the output.
 
-humanChar :: Char
-humanChar = 'H'
-
-computerChar :: Char
-computerChar = 'C'
-
-otherPlayer c
-    | c == humanChar = computerChar
-    | otherwise = humanChar
-
 data Player = Human | Computer
   deriving (Eq, Show)
 
@@ -127,5 +117,4 @@ adjacentSpaces = [[x,y]|[x,y,_] <- mills] ++ [[x,y]|[_,x,y] <- mills]
 -- adjacent x y is true if x and y are adjacent
 isAdjacent :: Int -> Int -> Bool
 isAdjacent x y = elem [x,y] adjacentSpaces || elem [y,x] adjacentSpaces
-
 
