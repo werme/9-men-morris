@@ -16,10 +16,6 @@ import Data.List
 --playLevel :: Int
 --playLevel = 3 -- implement level 1 first, then progress to 2 & 3
 
----------------------------------------------------------------------
--- FUNCTIONS NEEDED FOR ALL THREE LEVELS
----------------------------------------------------------------------
-
 -- Parameters: a board and a player character.  Assume the player is 
 -- either humanChar or computerChar.
 -- Return value: the number of mills the player has
@@ -130,12 +126,6 @@ bestPlacement (Player c,bpl,wpl,b) = best $ getPositionsWithState b Nothing
 bestCapture :: GameState -> [Pos] -> Pos
 bestCapture (p,_,_,b) ps = head ps -- TODO
  
----------------------------------------------------------------------
--- FUNCTION NEEDED FOR LEVEL 3 ONLY
--- (Levels 1&2 will not use this function, so the dummy
---  value won't affect the game)
----------------------------------------------------------------------
-
 -- This function is like bestPlacement, but for phase 2 of the game
 -- Given a game state (assuming it's the computer's turn), pick the best 
 -- legal phase 2 move to make (moving a piece to an adjacent position).
