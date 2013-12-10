@@ -14,13 +14,6 @@ import Data.List
 newtype Player = Player Color
   deriving (Eq, Show)
 
--- A board is described by a tuple of two lists: the human player's squares and the 
--- computer's squares.  Both lists should contain integers in [1..24] with no 
--- duplicates and no integers in both lists.  (Functions don't need to
--- check this assumption.)
-
---type Board = ([Int],[Int])
-
 -- The state of a game at any time is described by a tuple of four items:
 -- 1. person whose turn it is (humanChar or computerChar)
 -- 2. the number of pieces the human player has not yet placed on the board 
@@ -68,9 +61,6 @@ getPossibleMovePositions state p = pps
   where
     eps = getPositions state Nothing
     pps = [ pp | pp <- eps, isAdjacent p pp ]
-
-playerMills :: GameState -> [[Pos]]
-playerMills (Player c,_,_,b) = getMills b c
 
 canMove :: GameState -> Bool
 canMove s = any (not . null . getPossibleMovePositions s) pps
