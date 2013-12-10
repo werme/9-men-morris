@@ -56,7 +56,7 @@ playPhase1 state =
             playGame (switchPlayer nextState)
     else do -- computer's turn
         putStrLn "\nMY TURN"
-        let newPosition = bestMove1 state
+        let newPosition = bestPlacement state
         putStrLn ("I am adding a piece to position " 
                   ++ (show newPosition)) 
         let nextState = addPiece state newPosition
@@ -133,7 +133,7 @@ playPhase2 state =
             playGame (switchPlayer state3)
     else do -- computer's turn
         putStrLn "\nMY TURN"
-        let (fromPos, toPos) = bestMove2 state
+        let (fromPos, toPos) = bestMove state
         putStrLn ("I am moving from " ++ (show fromPos) ++ " to " 
                   ++ (show toPos))
         let state2 = removePiece state fromPos

@@ -82,8 +82,8 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
 -- legal phase 1 move to make (adding a piece to the board).
 -- Return value: the position where the new piece should go.
 -- Assumes the game is not over, so there will be a legal move.
-bestMove1 :: GameState -> Pos
-bestMove1 (p,hc,cc,b) = best $ getPositions (p,hc,cc,b) Nothing
+bestPlacement :: GameState -> Pos
+bestPlacement (p,hc,cc,b) = best $ getPositionsWithState b Nothing
   where
     better np op = playerScore (p,hc,cc,nb np) > playerScore (p,hc,cc,nb op)
     nb p'        = updateBoard b (Just White ) p'
@@ -120,7 +120,7 @@ removePiece (p,hc,cc,b) s = (p,hc,cc,nb)
 -- pieces outside a mill, then any piece may be captured.  
 captureList :: GameState -> [Pos]
 captureList (Player c,hc,cc,b) | not $ null cps = sort cps
-                        | otherwise      = sort pps
+                               | otherwise      = sort pps
   where
     pps       = getPositionsWithState b $ (Just $ invert c)
     cps       = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
@@ -139,7 +139,7 @@ bestCapture (p,_,_,b) ps = head ps -- TODO
 --  value won't affect the game)
 ---------------------------------------------------------------------
 
--- This function is like bestMove1, but for phase 2 of the game
+-- This function is like bestPlacement, but for phase 2 of the game
 -- Given a game state (assuming it's the computer's turn), pick the best 
 -- legal phase 2 move to make (moving a piece to an adjacent position).
 -- Return value: the best move
@@ -151,8 +151,8 @@ bestCapture (p,_,_,b) ps = head ps -- TODO
 --       next move
 --    C. Pick the move that gives you the state with the best score, as 
 --       in phase 1.
-bestMove2 :: GameState -> Move
-bestMove2 (Player c,hc,cc,b) = (from,too) -- dummy
+bestMove :: GameState -> Move
+bestMove (Player c,hc,cc,b) = (from,too) -- dummy
   where
     pmps p = getPossibleMovePositions (Player c,hc,cc,b) p
     from   = head [ p' | p' <- getPositionsWithState b (Just c), not $ null $ pmps p' ]
