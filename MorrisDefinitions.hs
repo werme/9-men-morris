@@ -70,11 +70,7 @@ getPossibleMovePositions state p = pps
     pps = [ pp | pp <- eps, isAdjacent p pp ]
 
 playerMills :: GameState -> [[Pos]]
-playerMills (Player c,_,_,b) = pms
-  where 
-    ps      = getPositionsWithState b (Just c)
-    pms     = foldr (\m ms -> if hasMill m then m:ms else ms) [] mills
-    hasMill = all (`elem` ps)
+playerMills (Player c,_,_,b) = getMills b c
 
 canMove :: GameState -> Bool
 canMove s = any (not . null . getPossibleMovePositions s) pps
