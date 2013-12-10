@@ -40,8 +40,8 @@ twoOutOfThreeCount p b = pms
     mps      = foldr (\p' ps' -> if p' `elem` ps then ps' + 1 else ps') 0
     hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
 
-playerScore :: Player -> Board -> Int
-playerScore p b = mss + omss + tots + otots
+playerScore :: GameState -> Int
+playerScore (p,hc,cc,b) = mss + omss + tots + otots
   where 
     mss   = 10 * millCount p b
     omss  = (-9) * millCount (opponent p) b
@@ -84,7 +84,7 @@ status (p,hc,cc,(hps,cps)) | hasLost Human hps    = ComputerWon
 bestMove1 :: GameState -> Place
 bestMove1 (p,hc,cc,(hps,cps)) = best $ getEmptyPositions (p,hc,cc,(hps,cps))
   where
-    better np op = playerScore p (hps,np:cps) > playerScore p (hps,op:cps) 
+    better np op = playerScore (p,hc,cc,(hps,np:cps)) > playerScore (p,hc,cc,(hps,op:cps)) 
     best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
 
 -- A new game state produced by placing a piece on the board
