@@ -27,26 +27,26 @@ import Data.List
 millCount :: Player -> Board -> Int
 millCount p b = pms
   where 
-    ps        = getPlayerPositions p b
-    pms       = foldr (\m mc -> if hasMill m then (mc + 1) else mc) 0 mills
-    hasMill m = all (\mp -> mp `elem` ps) m
+    ps      = getPlayerPositions p b
+    pms     = foldr (\m mc -> if hasMill m then mc + 1 else mc) 0 mills
+    hasMill = all (`elem` ps)
 
 twoOutOfThreeCount :: Player -> Board -> Int
 twoOutOfThreeCount p b = pms
   where 
     ps       = getPlayerPositions p b
     ops      = getPlayerPositions (opponent p) b
-    pms      = foldr (\m mc -> if hasTwo m then (mc + 1) else mc) 0 mills
-    mps m    = foldr (\p' ps' -> if p' `elem` ps then (ps' + 1) else ps') 0 m
-    hasTwo m = (mps m == 2) && (not $ any (\p'' -> p'' `elem` ops) m)
+    pms      = foldr (\m mc -> if hasTwo m then mc + 1 else mc) 0 mills
+    mps      = foldr (\p' ps' -> if p' `elem` ps then ps' + 1 else ps') 0
+    hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
 
 playerScore :: Player -> Board -> Int
 playerScore p b = mss + omss + tots + otots
   where 
-    mss   = 10 * (millCount p b)
-    omss  = (-9) * (millCount (opponent p) b)
-    tots  = 4 * (twoOutOfThreeCount p b)
-    otots = (-5) * (twoOutOfThreeCount (opponent p) b)
+    mss   = 10 * millCount p b
+    omss  = (-9) * millCount (opponent p) b
+    tots  = 4 * twoOutOfThreeCount p b
+    otots = (-5) * twoOutOfThreeCount (opponent p) b
     
 -- Tests if the game is over.  Returns one of four characters:
 --   humanChar: game is over and human player has won
@@ -65,7 +65,7 @@ status (p,hc,cc,(hps,cps)) | hasLost Human hps    = ComputerWon
                            | otherwise            = Ongoing 
   where 
     s                   = (p,hc,cc,(hps,cps))
-    looseCondition p ps = length ps < 3 || (not $ canMove s)
+    looseCondition p ps = length ps < 3 || not (canMove s)
     hasLost p ps        = isMovePhase s && looseCondition p ps
     
 -- Given a game state (assuming it's the computer's turn), pick the best 
@@ -76,7 +76,7 @@ bestMove1 :: GameState -> Int
 bestMove1 (p,hc,cc,(hps,cps)) = best $ getEmptyPositions (p,hc,cc,(hps,cps))
   where
     better np op = playerScore p (hps,np:cps) > playerScore p (hps,op:cps) 
-    best ps      = foldr1 (\p' bp -> if better p' bp then p' else bp) ps
+    best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
 
 -- A new game state produced by placing a piece on the board
 -- Parameters: initial state and position where piece will go.  The piece 
@@ -112,10 +112,10 @@ captureList :: GameState -> [Int]
 captureList (p,_,_,b) | not $ null cps = sort cps
                       | otherwise      = sort pps
   where
-    pps           = getPlayerPositions (opponent p) b
-    cps           = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
-    deleteAll l d = foldr delete l d
-    hasMill m     = all (\mp -> mp `elem` pps) m
+    pps       = getPlayerPositions (opponent p) b
+    cps       = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
+    deleteAll = foldr delete
+    hasMill   = all (`elem` pps)
     
 -- Picks the best capture for the computer to make after a mill 
 -- Parameters: starting state and list of possible captures (assume 
@@ -142,5 +142,9 @@ bestCapture (p,_,_,b) ps = head ps
 --    C. Pick the move that gives you the state with the best score, as 
 --       in phase 1.
 bestMove2 :: GameState -> Move
-bestMove2 s = (1,2) -- TODO
+bestMove2 (p,hc,cc,b) = (from,too) -- dummy
+  where
+    pmps = getPossibleMovePositions
+    from = head [ p'' | p'' <- getPlayerPositions p b, not $ null $ pmps (p,hc,cc,b) p'' ]
+    too  = head $ pmps (p,hc,cc,b) from
    
