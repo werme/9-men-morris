@@ -59,7 +59,11 @@ place b (Player c) = updateBoard b (Just c)
 move :: Board -> Player -> Move -> Board
 move b (Player c) (f,t) = updateBoard (updateBoard b Nothing f) (Just c) t
 
--- REMOVE addPiece AND removePiece?
+-- Removes the piece at the given position from the board, currently not used
+capture :: Board -> Pos -> Board
+capture b = updateBoard b Nothing
+
+-- REMOVE THE GAMESTATE DEPENDENT STUFF BELOW?
 
 -- Adds a piece at the given position for the current player
 addPiece :: GameState -> Pos -> GameState
@@ -114,7 +118,7 @@ possibleDestinations b (Player c) p = pps
 -- pieces outside a mill, then any piece may be captured.  
 capturablePositions :: Board -> Player -> [Pos]
 capturablePositions b (Player c) | not $ null capturable = sort capturable
-                         | otherwise             = sort ops
+                                 | otherwise             = sort ops
   where
     ops        = getPositionsWithState b (Just $ invert c)
     capturable = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) ops mills
