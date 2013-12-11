@@ -78,6 +78,36 @@ removePiece (p,bpl,wpl,b) pos = (p,bpl,wpl,capture b pos)
 
 -------------------------------------------------------------------------------
 
+-- Returns the possible positions to move to from a given position
+possibleDestinations :: Board -> Pos -> [Pos]
+possibleDestinations b f = filter (\t -> canMoveBetween f t b) eps
+  where eps = getPositionsWithState b Nothing
+  
+-- Given a game state after a player has made a mill, returns a list of
+-- the opponent pieces it would be legal to capture.  These are all the
+-- pieces which are not part of a mill.  Exception: if there are no 
+-- pieces outside a mill, then any piece may be captured.  
+capturablePositions :: Board -> Player -> [Pos]
+capturablePositions b (Player c) | not $ null capturable = sort capturable
+                                 | otherwise             = sort ops
+  where
+    ops        = getPositionsWithState b (Just $ invert c)
+    capturable = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) ops mills
+    deleteAll  = foldr delete
+    hasMill    = all (`elem` ops)
+
+-- Returns a list of all positions with movable pieces for the current player
+movablePositions :: Board -> Player -> [Pos]
+movablePositions b (Player c) = movable $ getPositionsWithState b (Just c)
+  where movable = filter (not . null . possibleDestinations b)
+
+-- Returns a list of all possible moves for the current player
+possibleMoves :: Board -> Player -> [Move]
+possibleMoves b p = foldr (\from ms -> pms from ++ ms) [] $ movablePositions b p 
+  where pms f = map (\t -> (f,t)) $ possibleDestinations b f
+
+-------------------------------------------------------------------------------
+
 data Status = BlackWon | WhiteWon | Ongoing
   deriving (Eq)
 
@@ -105,50 +135,13 @@ isMovePhase s = not $ isPlacingPhase s
 
 -------------------------------------------------------------------------------
 
--- Returns the possible positions to move to from a given position
-possibleDestinations :: Board -> Pos -> [Pos]
-possibleDestinations b f = filter (\t -> canMoveBetween f t b) eps
-  where eps = getPositionsWithState b Nothing
-   
-
-    -- [ pp | pp <- eps, isAdjacent p pp ]
-
--- Given a game state after a player has made a mill, returns a list of
--- the opponent pieces it would be legal to capture.  These are all the
--- pieces which are not part of a mill.  Exception: if there are no 
--- pieces outside a mill, then any piece may be captured.  
-capturablePositions :: Board -> Player -> [Pos]
-capturablePositions b (Player c) | not $ null capturable = sort capturable
-                                 | otherwise             = sort ops
-  where
-    ops        = getPositionsWithState b (Just $ invert c)
-    capturable = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) ops mills
-    deleteAll  = foldr delete
-    hasMill    = all (`elem` ops)
-
--- Returns a list of all positions with movable pieces for the current player
-movablePositions :: Board -> Player -> [Pos]
-movablePositions b (Player c) = movable $ getPositionsWithState b (Just c)
-  where
-    movable = filter (not . null . pmps)
-    pmps    = possibleDestinations b
-
--- Returns a list of all possible moves for the current player
-possibleMoves :: Board -> Player -> [Move]
-possibleMoves b p = foldr (\fp ms -> pms fp ++ ms) [] $ movablePositions b p 
-  where 
-    pms from = map (\to -> (from,to)) $ possibleDestinations b from
-
--------------------------------------------------------------------------------
-
 -- Returns the best (hehe) position for a placement move for the current player.
 -- Assumes the game is not over, so there will be a legal move.
 bestPlacement :: GameState -> Pos
-bestPlacement (Player c,bpl,wpl,b) = best $ getPositionsWithState b Nothing
+bestPlacement (p,bpl,wpl,b) = best $ getPositionsWithState b Nothing
   where
-    best         = foldr1 (\p bp -> if better p bp then p else bp)
-    better np op = betterScore (Player c) (nb np) (nb op) 
-    nb           = updateBoard b (Just c)
+    best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
+    better np op = betterScore p (place b p np) (place b p op) 
 
 -- Picks the best capture for the computer to make after a mill 
 -- Parameters: starting state and list of possible captures (assume 
@@ -178,4 +171,4 @@ bestMove (p,bpl,wpl,b) = foldr1 best $ possibleMoves b p
                | otherwise                                  = om
     better nm' om' = betterScore p (move b p nm') (move b p om')
 
-   
+  
