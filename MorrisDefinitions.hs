@@ -6,23 +6,8 @@ module MorrisDefinitions where
 import MorrisModel
 import Data.List
 
--- A game is played against a human player (who goes first) and the computer.
--- I'm using the initials 'H' (for the human) and 'C' (for the computer).
--- You may change them to two other characters, except don't use 'X' or 'D' or digits, as 
--- these are used for other purposes in the code and the output.
-
 newtype Player = Player Color
   deriving (Eq, Show)
-
--- The state of a game at any time is described by a tuple of four items:
--- 1. person whose turn it is (humanChar or computerChar)
--- 2. the number of pieces the human player has not yet placed on the board 
--- 3. the number of pieces the computer has not yet placed on the board
--- 4. the board
-type GameState = (Player, Int, Int, Board)
-
-data Status = BlackWon | WhiteWon | Ongoing
-  deriving (Eq)
 
 getPlayerMark :: Player -> Char
 getPlayerMark (Player Black) = 'X'
@@ -35,6 +20,15 @@ opponent (Player White) = (Player Black)
 invert :: Color -> Color
 invert Black = White
 invert White = Black
+
+-- The state of a game at any time is described by a tuple of four items:
+-- 1. person whose turn it is (humanChar or computerChar)
+-- 2. the number of pieces the human player has not yet placed on the board 
+-- 3. the number of pieces the computer has not yet placed on the board
+-- 4. the board
+type GameState = (Player, Int, Int, Board)
+
+type Move = (Pos,Pos)
 
 -- extract parts of a state
   
@@ -56,31 +50,6 @@ getCompCount (_,_,cc,_) = cc
 getPositions :: GameState -> Maybe Color -> [Pos]
 getPositions (_,_,_,b) c = getPositionsWithState b c
 
-getPossibleMovePositions :: Board -> Player -> Pos -> [Pos]
-getPossibleMovePositions b (Player c) p = pps
-  where
-    eps = getPositionsWithState b Nothing
-    pps = [ pp | pp <- eps, isAdjacent p pp ]
-
--- Returns true if the current player can make a move
-canMove :: Board -> Player -> Bool
-canMove b (Player c) = any (not . null . getPossibleMovePositions b (Player c)) pps
-  where pps = getPositionsWithState b (Just c)
-
-isPlacingPhase :: GameState -> Bool
-isPlacingPhase (Player Black,bpl,_,_) = bpl > 0
-isPlacingPhase (Player White,_,wpl,_) = wpl > 0
-
-isMovePhase :: GameState -> Bool
-isMovePhase s = not $ isPlacingPhase s 
-
--- a move in phase1 is a single integer: the position on which to put a piece
--- a move in phase2 is a pair of integers: (position to move from, position to move to)
-type Move = (Pos,Pos)
-
--- Given a game state, returns an equivalent game state where it's the other
--- player's turn
 switchPlayer :: GameState -> GameState
 switchPlayer (p, hc, cc, b) = (opponent p, hc, cc, b)
-
 

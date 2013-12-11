@@ -19,11 +19,11 @@ millCount b (Player c) = length $ getMills b c
 twoOutOfThreeCount :: Board -> Player -> Int
 twoOutOfThreeCount b (Player c) = pms
   where 
-    pps      = getPositionsWithState b (Just c)
-    ops      = getPositionsWithState b (Just $ invert c)
     pms      = foldr (\m mc -> if hasTwo m then mc + 1 else mc) 0 mills
-    mps      = foldr (\p' ps' -> if p' `elem` pps then ps' + 1 else ps') 0
     hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
+    mps      = foldr (\p' ps' -> if p' `elem` pps then ps' + 1 else ps') 0
+    ops      = getPositionsWithState b (Just $ invert c)
+    pps      = getPositionsWithState b (Just c)
 
 -- Returns the total board score of the current player. See code for details
 playerScore :: Board -> Player -> Int
@@ -33,6 +33,8 @@ playerScore b p = mss + omss + tots + otots
     omss  = (-9) * (millCount b $ opponent p)
     tots  = 4 * twoOutOfThreeCount b p
     otots = (-5) * (twoOutOfThreeCount b $ opponent p)
+
+-------------------------------------------------------------------------------
 
 -- Returns true if the first board yields a higher score than the second one
 -- for the given player.
@@ -47,6 +49,8 @@ addsMill b p m = millCount b p > millCount (move b p m) p
 breaksMill :: Board -> Player -> Move -> Bool
 breaksMill b p m = millCount b p < millCount (move b p m) p 
 
+-------------------------------------------------------------------------------
+
 -- Makes the given placement mote for the given player
 place :: Board -> Player -> Pos -> Board
 place b (Player c) p = updateBoard b (Just c) p
@@ -54,6 +58,24 @@ place b (Player c) p = updateBoard b (Just c) p
 -- Makes the given move for the given player
 move :: Board -> Player -> Move -> Board
 move b (Player c) (f,t) = updateBoard (updateBoard b Nothing f) (Just c) t
+
+-- REMOVE addPiece AND removePiece?
+
+-- Adds a piece at the given position for the current player
+addPiece :: GameState -> Pos -> GameState
+addPiece (Player pc,bpl,wpl,b) p = ns pc
+  where ns c | c == Black = (Player c,bpl-1,wpl,updateBoard b (Just c) p)
+             | c == White = (Player c,bpl,wpl-1,updateBoard b (Just c) p)
+
+-- Removes a piece from the board at the given position
+removePiece :: GameState -> Pos -> GameState
+removePiece (p,hc,cc,b) s = (p,hc,cc,nb)
+  where nb = updateBoard b Nothing s
+
+-------------------------------------------------------------------------------
+
+data Status = BlackWon | WhiteWon | Ongoing
+  deriving (Eq)
 
 -- Returns the current state of the game
 status :: GameState -> Status
@@ -66,16 +88,26 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
     looseCondition p ps = length ps < 3 || not (canMove b p)
     hasLost c ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
 
--- Adds a piece at the given position for the current player
-addPiece :: GameState -> Pos -> GameState
-addPiece (Player pc,bpl,wpl,b) p = ns pc
-  where ns c | c == Black = (Player c,bpl-1,wpl,updateBoard b (Just c) p)
-             | c == White = (Player c,bpl,wpl-1,updateBoard b (Just c) p)
+-- Returns true if the current player can make a move
+canMove :: Board -> Player -> Bool
+canMove b (Player c) = any (not . null . getPossibleMovePositions b (Player c)) pps
+  where pps = getPositionsWithState b (Just c)
 
--- Removes a piece from the board at the given position
-removePiece :: GameState -> Pos -> GameState
-removePiece (p,hc,cc,b) s = (p,hc,cc,nb)
-  where nb = updateBoard b Nothing s
+isPlacingPhase :: GameState -> Bool
+isPlacingPhase (Player Black,bpl,_,_) = bpl > 0
+isPlacingPhase (Player White,_,wpl,_) = wpl > 0
+
+isMovePhase :: GameState -> Bool
+isMovePhase s = not $ isPlacingPhase s 
+
+-------------------------------------------------------------------------------
+
+-- Returns the possible positions to move to from a given position
+getPossibleMovePositions :: Board -> Player -> Pos -> [Pos]
+getPossibleMovePositions b (Player c) p = pps
+  where
+    eps = getPositionsWithState b Nothing
+    pps = [ pp | pp <- eps, isAdjacent p pp ]
 
 -- Given a game state after a player has made a mill, returns a list of
 -- the opponent pieces it would be legal to capture.  These are all the
@@ -102,6 +134,8 @@ possibleMovesList :: Board -> Player -> [Move]
 possibleMovesList b p = foldr (\fp ms -> pms fp ++ ms) [] $ movableList b p 
   where 
     pms from = map (\to -> (from,to)) $ getPossibleMovePositions b p from
+
+-------------------------------------------------------------------------------
 
 -- Returns the best (hehe) position for a placement move for the current player.
 -- Assumes the game is not over, so there will be a legal move.
