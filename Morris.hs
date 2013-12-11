@@ -79,7 +79,7 @@ humanMill state = do
     putStrLn "\nYOU MADE A MILL!"
     displayBoard (getBoard state)
     -- list of positions which may be captured
-    let capList = captureList state
+    let capList = captureList (getBoard state) (getPlayer state)
     if (null capList) then do
         -- the computer has no pieces on the board 
         -- (very unlikely, but check to be sure)
@@ -98,7 +98,7 @@ humanMill state = do
 computerMill :: GameState -> IO GameState
 computerMill state = do
     putStrLn "\nI MADE A MILL!"
-    let capList = captureList state
+    let capList = captureList (getBoard state) (getPlayer state)
     if (null capList) then do
             -- human has no pieces on the board
             -- (very unlikely, but check)

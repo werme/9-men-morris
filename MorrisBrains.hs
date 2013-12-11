@@ -30,9 +30,9 @@ playerScore :: Board -> Player -> Int
 playerScore b p = mss + omss + tots + otots
   where 
     mss   = 10 * millCount b p
-    omss  = (-9) * (millCount b $ opponent p)
+    omss  = (-9) * millCount b (opponent p)
     tots  = 4 * twoOutOfThreeCount b p
-    otots = (-5) * (twoOutOfThreeCount b $ opponent p)
+    otots = (-5) * twoOutOfThreeCount b (opponent p)
 
 -------------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ breaksMill b p m = millCount b p < millCount (move b p m) p
 
 -- Makes the given placement mote for the given player
 place :: Board -> Player -> Pos -> Board
-place b (Player c) p = updateBoard b (Just c) p
+place b (Player c) = updateBoard b (Just c)
 
 -- Makes the given move for the given player
 move :: Board -> Player -> Move -> Board
@@ -113,20 +113,20 @@ getPossibleMovePositions b (Player c) p = pps
 -- the opponent pieces it would be legal to capture.  These are all the
 -- pieces which are not part of a mill.  Exception: if there are no 
 -- pieces outside a mill, then any piece may be captured.  
-captureList :: GameState -> [Pos]
-captureList (Player c,hc,cc,b) | not $ null cps = sort cps
-                               | otherwise      = sort pps
+captureList :: Board -> Player -> [Pos]
+captureList b (Player c) | not $ null capturable = sort capturable
+                         | otherwise             = sort ops
   where
-    pps       = getPositionsWithState b (Just $ invert c)
-    cps       = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) pps mills
-    deleteAll = foldr delete
-    hasMill   = all (`elem` pps)
+    ops        = getPositionsWithState b (Just $ invert c)
+    capturable = foldr (\m ps -> if hasMill m then deleteAll ps m else ps) ops mills
+    deleteAll  = foldr delete
+    hasMill    = all (`elem` ops)
 
 -- Returns a list of all positions with movable pieces for the current player
 movableList :: Board -> Player -> [Pos]
 movableList b (Player c) = movable $ getPositionsWithState b (Just c)
   where
-    movable = filter (\p -> not $ null $ pmps p)
+    movable = filter (not . null . pmps)
     pmps    = getPossibleMovePositions b (Player c)
 
 -- Returns a list of all possible moves for the current player
@@ -150,7 +150,7 @@ bestPlacement (Player c,bpl,wpl,b) = best $ getPositionsWithState b Nothing
 -- Parameters: starting state and list of possible captures (assume 
 -- non-empty)
 bestCapture :: GameState -> [Pos] -> Pos
-bestCapture (p,_,_,b) ps = foldr1 (\c bc -> if better c bc then c else bc) ps
+bestCapture (p,_,_,b) = foldr1 (\c bc -> if better c bc then c else bc)
   where better nc oc = betterScore p (place b p nc) (place b p oc)
  
 -- This function is like bestPlacement, but for phase 2 of the game
@@ -166,7 +166,7 @@ bestCapture (p,_,_,b) ps = foldr1 (\c bc -> if better c bc then c else bc) ps
 --    C. Pick the move that gives you the state with the best score, as 
 --       in phase 1.
 bestMove :: GameState -> Move
-bestMove (p,bpl,wpl,b) = foldr1 (\m bm -> best m bm) $ possibleMovesList b p
+bestMove (p,bpl,wpl,b) = foldr1 best $ possibleMovesList b p
   where 
     best nm om | addsMill b p nm                            = nm
                | not (addsMill b p om) && breaksMill b p nm = nm

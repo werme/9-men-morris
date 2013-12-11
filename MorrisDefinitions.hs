@@ -14,8 +14,8 @@ getPlayerMark (Player Black) = 'X'
 getPlayerMark (Player White) = 'O'
 
 opponent :: Player -> Player
-opponent (Player Black) = (Player White)
-opponent (Player White) = (Player Black)
+opponent (Player Black) = Player White
+opponent (Player White) = Player Black
 
 invert :: Color -> Color
 invert Black = White
