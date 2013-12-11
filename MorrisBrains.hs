@@ -67,14 +67,14 @@ capture b = updateBoard b Nothing
 
 -- Adds a piece at the given position for the current player
 addPiece :: GameState -> Pos -> GameState
-addPiece (Player pc,bpl,wpl,b) p = ns pc
-  where ns c | c == Black = (Player c,bpl-1,wpl,updateBoard b (Just c) p)
-             | c == White = (Player c,bpl,wpl-1,updateBoard b (Just c) p)
+addPiece (p,bpl,wpl,b) pos = newState $ getPlayerColor p
+  where 
+    newState Black = (p,bpl-1,wpl,place b p pos)
+    newState White = (p,bpl,wpl-1,place b p pos)
 
 -- Removes a piece from the board at the given position
 removePiece :: GameState -> Pos -> GameState
-removePiece (p,hc,cc,b) s = (p,hc,cc,nb)
-  where nb = updateBoard b Nothing s
+removePiece (p,bpl,wpl,b) pos = (p,bpl,wpl,capture b pos)
 
 -------------------------------------------------------------------------------
 

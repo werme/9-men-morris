@@ -35,8 +35,8 @@ type Move = (Pos,Pos)
 getPlayer :: GameState -> Player
 getPlayer (p,_,_,_) = p
 
-getPlayerColor :: GameState -> Color
-getPlayerColor (Player c,_,_,_) = c
+getPlayerColor :: Player -> Color
+getPlayerColor (Player c) = c
 
 getBoard :: GameState -> Board
 getBoard (_,_,_,b) = b
