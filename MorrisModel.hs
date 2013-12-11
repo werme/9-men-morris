@@ -57,7 +57,6 @@ getPositionState (Board bitBoard) (Pos n) =
             translate 1	= Just Black
             translate 0	= Nothing
 
-			
 -- Returns all positions on the board that has the state Color
 getPositionsWithState :: Board -> Maybe Color -> [Pos]
 getPositionsWithState b c =
@@ -71,8 +70,7 @@ isAdjacent x y = elem [x,y] edges || elem [y,x] edges
 canMoveBetween :: Pos -> Pos -> Board -> Bool
 canMoveBetween x y b = isAdjacent x y && isNothing (getPositionState b y)
 
-
--- Returns all the completed mills that Color has
+-- Returns all the completed mills of the given color
 getMills :: Board -> Color -> [[Pos]]
 getMills b c = foldr (\m ms -> if millComplete m then m:ms else ms) [] mills
     where   positions    = getPositionsWithState b (Just c)

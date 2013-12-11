@@ -17,22 +17,22 @@ millCount b (Player c) = length $ getMills b c
 
 -- Returns the number of twoOutOfThree:s on the board for the given player 
 twoOutOfThreeCount :: Board -> Player -> Int
-twoOutOfThreeCount b (Player c) = pms
+twoOutOfThreeCount b (Player c) = toots mills
   where 
-    pms      = foldr (\m mc -> if hasTwo m then mc + 1 else mc) 0 mills
-    hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
-    mps      = foldr (\p' ps' -> if p' `elem` pps then ps' + 1 else ps') 0
+    toots    = foldr (\m mc -> if isToot m then mc + 1 else mc) 0
+    isToot m = mps m == 2 && not (any (`elem` ops) m)
+    mps      = foldr (\p ps -> if p `elem` pps then ps + 1 else ps) 0
     ops      = getPositionsWithState b (Just $ invert c)
     pps      = getPositionsWithState b (Just c)
 
 -- Returns the total board score of the current player. See code for details
 playerScore :: Board -> Player -> Int
-playerScore b p = mss + omss + tots + otots
+playerScore b p = mss + omss + toots + otoots
   where 
-    mss   = 10 * millCount b p
-    omss  = (-9) * millCount b (opponent p)
-    tots  = 4 * twoOutOfThreeCount b p
-    otots = (-5) * twoOutOfThreeCount b (opponent p)
+    mss    = 10 * millCount b p
+    omss   = (-9) * millCount b (opponent p)
+    toots  = 4 * twoOutOfThreeCount b p
+    otoots = (-5) * twoOutOfThreeCount b (opponent p)
 
 -------------------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ isMovePhase s = not $ isPlacingPhase s
 
 -------------------------------------------------------------------------------
 
--- Returns the best (hehe) position for a placement move for the current player.
+-- Returns the "best" position for a placement move for the current player.
 -- Assumes the game is not over, so there will be a legal move.
 bestPlacement :: GameState -> Pos
 bestPlacement (p,bpl,wpl,b) = best $ getPositionsWithState b Nothing
