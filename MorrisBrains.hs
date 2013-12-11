@@ -26,22 +26,34 @@ twoOutOfThreeCount b (Player c) = pms
     hasTwo m = (mps m == 2) && not (any (`elem` ops) m)
 
 -- Returns the total board score of the current player. See code for details
-playerScore :: GameState -> Int
-playerScore (p,hc,cc,b) = mss + omss + tots + otots
+playerScore :: Board -> Player -> Int
+playerScore b p = mss + omss + tots + otots
   where 
     mss   = 10 * millCount b p
     omss  = (-9) * (millCount b $ opponent p)
     tots  = 4 * twoOutOfThreeCount b p
     otots = (-5) * (twoOutOfThreeCount b $ opponent p)
 
--- Returns true if the given move creates a mill for the current player
-addsMill :: GameState -> Move -> Bool
-addsMill (p,bpl,wpl,b) m = millCount b p > millCount nb p 
-  where nb = getBoard $ move (p,bpl,wpl,b) m
+-- Returns true if the first board yields a higher score than the second one
+-- for the given player.
+betterScore :: Player -> Board -> Board -> Bool
+betterScore p nb ob = playerScore nb p > playerScore ob p
+  
+-- Returns true if the given move creates a mill for the given player
+addsMill :: Board -> Player -> Move -> Bool
+addsMill b p m = millCount b p > millCount (move b p m) p 
 
--- Makes the given move for the current player
-move :: GameState -> Move -> GameState
-move s (f,t) = addPiece (removePiece s f) t
+-- Returns true if the given move breaks one of the current players' mills
+breaksMill :: Board -> Player -> Move -> Bool
+breaksMill b p m = millCount b p < millCount (move b p m) p 
+
+-- Makes the given placement mote for the given player
+place :: Board -> Player -> Pos -> Board
+place b (Player c) p = updateBoard b (Just c) p
+
+-- Makes the given move for the given player
+move :: Board -> Player -> Move -> Board
+move b (Player c) (f,t) = updateBoard (updateBoard b Nothing f) (Just c) t
 
 -- Returns the current state of the game
 status :: GameState -> Status
@@ -51,7 +63,7 @@ status (p,hc,cc,b) | hasLost Black hps = WhiteWon
   where 
     hps                 = getPositionsWithState b (Just Black)
     cps                 = getPositionsWithState b (Just White)
-    looseCondition p ps = length ps < 3 || not (canMove (p,hc,cc,b))
+    looseCondition p ps = length ps < 3 || not (canMove b p)
     hasLost c ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
 
 -- Adds a piece at the given position for the current player
@@ -79,37 +91,39 @@ captureList (Player c,hc,cc,b) | not $ null cps = sort cps
     hasMill   = all (`elem` pps)
 
 -- Returns a list of all positions with movable pieces for the current player
-movableList :: GameState -> [Pos]
-movableList (Player c,hc,cc,b) = movable $ getPositionsWithState b (Just c)
+movableList :: Board -> Player -> [Pos]
+movableList b (Player c) = movable $ getPositionsWithState b (Just c)
   where
-    pmps    = getPossibleMovePositions (Player c,hc,cc,b)
-    movable = foldr (\p' mps -> pmps p' ++ mps) []
+    movable = filter (\p -> not $ null $ pmps p)
+    pmps    = getPossibleMovePositions b (Player c)
 
 -- Returns a list of all possible moves for the current player
-possibleMovesList :: GameState -> [Move]
-possibleMovesList s = undefined
+possibleMovesList :: Board -> Player -> [Move]
+possibleMovesList b p = foldr (\fp ms -> pms fp ++ ms) [] $ movableList b p 
+  where 
+    pms from = map (\to -> (from,to)) $ getPossibleMovePositions b p from
 
 -- Returns the best (hehe) position for a placement move for the current player.
 -- Assumes the game is not over, so there will be a legal move.
 bestPlacement :: GameState -> Pos
 bestPlacement (Player c,bpl,wpl,b) = best $ getPositionsWithState b Nothing
   where
-    best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
-    better np op = playerScore (Player c,bpl,wpl,newBoard np) > 
-                   playerScore (Player c,bpl,wpl,newBoard op)
-    newBoard     = updateBoard b (Just c)
+    best         = foldr1 (\p bp -> if better p bp then p else bp)
+    better np op = betterScore (Player c) (nb np) (nb op) 
+    nb           = updateBoard b (Just c)
 
 -- Picks the best capture for the computer to make after a mill 
 -- Parameters: starting state and list of possible captures (assume 
 -- non-empty)
 bestCapture :: GameState -> [Pos] -> Pos
-bestCapture (p,_,_,b) ps = head ps -- TODO
+bestCapture (p,_,_,b) ps = foldr1 (\c bc -> if better c bc then c else bc) ps
+  where better nc oc = betterScore p (place b p nc) (place b p oc)
  
 -- This function is like bestPlacement, but for phase 2 of the game
 -- Given a game state (assuming it's the computer's turn), pick the best 
 -- legal phase 2 move to make (moving a piece to an adjacent position).
 -- Return value: the best move
--- Assumes the game is not over, so there will be a legal move.
+-- Assumes the game is not [] over, so there will be a legal move.
 -- Strategy:
 --    A. If there's a move that gets you a mill (even if you have to 
 --       break up a mill to do it), that's the best move
@@ -118,9 +132,12 @@ bestCapture (p,_,_,b) ps = head ps -- TODO
 --    C. Pick the move that gives you the state with the best score, as 
 --       in phase 1.
 bestMove :: GameState -> Move
-bestMove (Player c,hc,cc,b) = (from,too) -- dummy
-  where
-    pmps   = getPossibleMovePositions (Player c,hc,cc,b)
-    from   = head [ p | p <- getPositionsWithState b (Just c), not $ null $ pmps p ]
-    too    = head $ pmps from
+bestMove (p,bpl,wpl,b) = foldr1 (\m bm -> best m bm) $ possibleMovesList b p
+  where 
+    best nm om | addsMill b p nm                            = nm
+               | not (addsMill b p om) && breaksMill b p nm = nm
+               | not (breaksMill b p om) && better nm om    = nm 
+               | otherwise                                  = om
+    better nm' om' = betterScore p (move b p nm') (move b p om')
+
    

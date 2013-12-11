@@ -56,16 +56,16 @@ getCompCount (_,_,cc,_) = cc
 getPositions :: GameState -> Maybe Color -> [Pos]
 getPositions (_,_,_,b) c = getPositionsWithState b c
 
-getPossibleMovePositions :: GameState -> Pos -> [Pos]
-getPossibleMovePositions state p = pps
+getPossibleMovePositions :: Board -> Player -> Pos -> [Pos]
+getPossibleMovePositions b (Player c) p = pps
   where
-    eps = getPositions state Nothing
+    eps = getPositionsWithState b Nothing
     pps = [ pp | pp <- eps, isAdjacent p pp ]
 
 -- Returns true if the current player can make a move
-canMove :: GameState -> Bool
-canMove s = any (not . null . getPossibleMovePositions s) pps
-  where pps = getPositionsWithState (getBoard s) (Just (getPlayerColor s))
+canMove :: Board -> Player -> Bool
+canMove b (Player c) = any (not . null . getPossibleMovePositions b (Player c)) pps
+  where pps = getPositionsWithState b (Just c)
 
 isPlacingPhase :: GameState -> Bool
 isPlacingPhase (Player Black,bpl,_,_) = bpl > 0
