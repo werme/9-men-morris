@@ -47,9 +47,6 @@ getHumanCount (_,hc,_,_) = hc
 getCompCount :: GameState -> Int
 getCompCount (_,_,cc,_) = cc
 
-getPositions :: GameState -> Maybe Color -> [Pos]
-getPositions (_,_,_,b) c = getPositionsWithState b c
-
 switchPlayer :: GameState -> GameState
 switchPlayer (p, hc, cc, b) = (opponent p, hc, cc, b)
 
