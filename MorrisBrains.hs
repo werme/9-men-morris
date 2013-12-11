@@ -89,7 +89,7 @@ status (p,bpl,wpl,b) | hasLost Black = WhiteWon
 
 -- Returns true if the current player can make a move
 canMove :: Board -> Player -> Bool
-canMove b (Player c) = any (not . null . getPossibleMovePositions b (Player c)) pps
+canMove b (Player c) = any (not . null . possibleDestinations b (Player c)) pps
   where pps = getPositionsWithState b (Just c)
 
 isPlacingPhase :: GameState -> Bool
@@ -102,8 +102,8 @@ isMovePhase s = not $ isPlacingPhase s
 -------------------------------------------------------------------------------
 
 -- Returns the possible positions to move to from a given position
-getPossibleMovePositions :: Board -> Player -> Pos -> [Pos]
-getPossibleMovePositions b (Player c) p = pps
+possibleDestinations :: Board -> Player -> Pos -> [Pos]
+possibleDestinations b (Player c) p = pps
   where
     eps = getPositionsWithState b Nothing
     pps = [ pp | pp <- eps, isAdjacent p pp ]
@@ -112,8 +112,8 @@ getPossibleMovePositions b (Player c) p = pps
 -- the opponent pieces it would be legal to capture.  These are all the
 -- pieces which are not part of a mill.  Exception: if there are no 
 -- pieces outside a mill, then any piece may be captured.  
-captureList :: Board -> Player -> [Pos]
-captureList b (Player c) | not $ null capturable = sort capturable
+capturablePositions :: Board -> Player -> [Pos]
+capturablePositions b (Player c) | not $ null capturable = sort capturable
                          | otherwise             = sort ops
   where
     ops        = getPositionsWithState b (Just $ invert c)
@@ -122,17 +122,17 @@ captureList b (Player c) | not $ null capturable = sort capturable
     hasMill    = all (`elem` ops)
 
 -- Returns a list of all positions with movable pieces for the current player
-movableList :: Board -> Player -> [Pos]
-movableList b (Player c) = movable $ getPositionsWithState b (Just c)
+movablePositions :: Board -> Player -> [Pos]
+movablePositions b (Player c) = movable $ getPositionsWithState b (Just c)
   where
     movable = filter (not . null . pmps)
-    pmps    = getPossibleMovePositions b (Player c)
+    pmps    = possibleDestinations b (Player c)
 
 -- Returns a list of all possible moves for the current player
-possibleMovesList :: Board -> Player -> [Move]
-possibleMovesList b p = foldr (\fp ms -> pms fp ++ ms) [] $ movableList b p 
+possibleMoves :: Board -> Player -> [Move]
+possibleMoves b p = foldr (\fp ms -> pms fp ++ ms) [] $ movablePositions b p 
   where 
-    pms from = map (\to -> (from,to)) $ getPossibleMovePositions b p from
+    pms from = map (\to -> (from,to)) $ possibleDestinations b p from
 
 -------------------------------------------------------------------------------
 
@@ -165,7 +165,7 @@ bestCapture (p,_,_,b) = foldr1 (\c bc -> if better c bc then c else bc)
 --    C. Pick the move that gives you the state with the best score, as 
 --       in phase 1.
 bestMove :: GameState -> Move
-bestMove (p,bpl,wpl,b) = foldr1 best $ possibleMovesList b p
+bestMove (p,bpl,wpl,b) = foldr1 best $ possibleMoves b p
   where 
     best nm om | addsMill b p nm                            = nm
                | not (addsMill b p om) && breaksMill b p nm = nm

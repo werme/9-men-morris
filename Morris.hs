@@ -79,7 +79,7 @@ humanMill state = do
     putStrLn "\nYOU MADE A MILL!"
     displayBoard (getBoard state)
     -- list of positions which may be captured
-    let capList = captureList (getBoard state) (getPlayer state)
+    let capList = capturablePositions (getBoard state) (getPlayer state)
     if (null capList) then do
         -- the computer has no pieces on the board 
         -- (very unlikely, but check to be sure)
@@ -99,7 +99,7 @@ humanMill state = do
 computerMill :: GameState -> IO GameState
 computerMill state = do
     putStrLn "\nI MADE A MILL!"
-    let capList = captureList (getBoard state) (getPlayer state)
+    let capList = capturablePositions (getBoard state) (getPlayer state)
     if (null capList) then do
             -- human has no pieces on the board
             -- (very unlikely, but check)
@@ -213,8 +213,8 @@ choosePosition prompt choices = do
 
 choosePhase2Move :: GameState -> IO (Pos,Pos)
 choosePhase2Move (p,bpl,wpl,b) = do
-    fromPos <- choosePosition "position to move from" (movableList b p)
-    toPos <- choosePosition "position to move to" (getPossibleMovePositions b p fromPos)
+    fromPos <- choosePosition "position to move from" (movablePositions b p)
+    toPos <- choosePosition "position to move to" (possibleDestinations b p fromPos)
     if not (isAdjacent fromPos toPos) then do
             putStrLn "these two positions are not adjacent"
             move <- choosePhase2Move (p,bpl,wpl,b)
