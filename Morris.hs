@@ -42,7 +42,7 @@ playPhase1 :: GameState -> IO ()
 playPhase1 state =
     if ((getPlayer state) == (Player Black))  then do -- player's turn
         putStrLn "\nYOUR TURN"
-        putStrLn ("you have " ++ (show (getHumanCount state))
+        putStrLn ("you have " ++ (show (getBlackCount state))
             ++ " piece(s) left")
         position <- playerChoice (getBoard state)
         let nextState = addPiece state position
@@ -90,6 +90,7 @@ humanMill state = do
         capturedPos <- choosePosition "pick a position to capture" capList
         let newState = removePiece state capturedPos
         putStrLn "the board after your capture:"
+
         displayBoard (getBoard newState)
         return newState
         

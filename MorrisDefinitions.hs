@@ -41,12 +41,12 @@ getPlayerColor (Player c,_,_,_) = c
 getBoard :: GameState -> Board
 getBoard (_,_,_,b) = b
 
-getHumanCount :: GameState -> Int
-getHumanCount (_,hc,_,_) = hc
+getBlackCount :: GameState -> Int
+getBlackCount (_,bpl,_,_) = bpl
 
-getCompCount :: GameState -> Int
-getCompCount (_,_,cc,_) = cc
+getWhiteCount :: GameState -> Int
+getWhiteCount (_,_,wpl,_) = wpl
 
 switchPlayer :: GameState -> GameState
-switchPlayer (p, hc, cc, b) = (opponent p, hc, cc, b)
+switchPlayer (p,bpl,wpl,b) = (opponent p,bpl,wpl,b)
 
