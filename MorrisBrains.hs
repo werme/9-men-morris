@@ -79,14 +79,13 @@ data Status = BlackWon | WhiteWon | Ongoing
 
 -- Returns the current state of the game
 status :: GameState -> Status
-status (p,hc,cc,b) | hasLost Black hps = WhiteWon 
-                   | hasLost White cps = BlackWon
-                   | otherwise         = Ongoing 
+status (p,bpl,wpl,b) | hasLost Black = WhiteWon 
+                     | hasLost White = BlackWon
+                     | otherwise     = Ongoing 
   where 
-    hps                 = getPositionsWithState b (Just Black)
-    cps                 = getPositionsWithState b (Just White)
-    looseCondition p ps = length ps < 3 || not (canMove b p)
-    hasLost c ps        = isMovePhase (p,hc,cc,b) && looseCondition p ps
+    hasLost c            = isMovePhase (p,bpl,wpl,b) && looseCondition p (pps c)
+    looseCondition p' ps = length ps < 3 || not (canMove b p')
+    pps c'               = getPositionsWithState b (Just c')
 
 -- Returns true if the current player can make a move
 canMove :: Board -> Player -> Bool
