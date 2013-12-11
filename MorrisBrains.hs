@@ -93,7 +93,7 @@ status (p,bpl,wpl,b) | hasLost Black = WhiteWon
 
 -- Returns true if the current player can make a move
 canMove :: Board -> Player -> Bool
-canMove b (Player c) = any (not . null . possibleDestinations b (Player c)) pps
+canMove b (Player c) = any (not . null . possibleDestinations b) pps
   where pps = getPositionsWithState b (Just c)
 
 isPlacingPhase :: GameState -> Bool
@@ -106,11 +106,12 @@ isMovePhase s = not $ isPlacingPhase s
 -------------------------------------------------------------------------------
 
 -- Returns the possible positions to move to from a given position
-possibleDestinations :: Board -> Player -> Pos -> [Pos]
-possibleDestinations b (Player c) p = pps
-  where
-    eps = getPositionsWithState b Nothing
-    pps = [ pp | pp <- eps, isAdjacent p pp ]
+possibleDestinations :: Board -> Pos -> [Pos]
+possibleDestinations b f = filter (\t -> canMoveBetween f t b) eps
+  where eps = getPositionsWithState b Nothing
+   
+
+    -- [ pp | pp <- eps, isAdjacent p pp ]
 
 -- Given a game state after a player has made a mill, returns a list of
 -- the opponent pieces it would be legal to capture.  These are all the
@@ -130,13 +131,13 @@ movablePositions :: Board -> Player -> [Pos]
 movablePositions b (Player c) = movable $ getPositionsWithState b (Just c)
   where
     movable = filter (not . null . pmps)
-    pmps    = possibleDestinations b (Player c)
+    pmps    = possibleDestinations b
 
 -- Returns a list of all possible moves for the current player
 possibleMoves :: Board -> Player -> [Move]
 possibleMoves b p = foldr (\fp ms -> pms fp ++ ms) [] $ movablePositions b p 
   where 
-    pms from = map (\to -> (from,to)) $ possibleDestinations b p from
+    pms from = map (\to -> (from,to)) $ possibleDestinations b from
 
 -------------------------------------------------------------------------------
 

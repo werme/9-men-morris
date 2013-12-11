@@ -214,7 +214,7 @@ choosePosition prompt choices = do
 choosePhase2Move :: GameState -> IO (Pos,Pos)
 choosePhase2Move (p,bpl,wpl,b) = do
     fromPos <- choosePosition "position to move from" (movablePositions b p)
-    toPos <- choosePosition "position to move to" (possibleDestinations b p fromPos)
+    toPos <- choosePosition "position to move to" (possibleDestinations b fromPos)
     if not (isAdjacent fromPos toPos) then do
             putStrLn "these two positions are not adjacent"
             move <- choosePhase2Move (p,bpl,wpl,b)
