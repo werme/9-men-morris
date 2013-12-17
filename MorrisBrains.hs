@@ -83,6 +83,9 @@ possibleDestinations :: Board -> Pos -> [Pos]
 possibleDestinations b f = filter (\t -> canMoveBetween f t b) eps
   where eps = getPositionsWithState b Nothing
   
+prop_possibleDestivation :: Board -> Pos -> Bool
+prop_possibleDestinations b p = all (canMoveBetween p) possibleDestinations b p
+
 -- Given a game state after a player has made a mill, returns a list of
 -- the opponent pieces it would be legal to capture.  These are all the
 -- pieces which are not part of a mill.  Exception: if there are no 
@@ -101,10 +104,17 @@ movablePositions :: Board -> Player -> [Pos]
 movablePositions b (Player c) = movable $ getPositionsWithState b (Just c)
   where movable = filter (not . null . possibleDestinations b)
 
+prop_movablePositions :: Board -> Pos -> Bool
+prop_movablePositions b p = any (\(o,d) -> canMoveBetween o d) [ (o,d) | o <- mps, d <- positions ]
+  where mps = movablePositions b p
+
 -- Returns a list of all possible moves for the current player
 possibleMoves :: Board -> Player -> [Move]
 possibleMoves b p = foldr (\from ms -> pms from ++ ms) [] $ movablePositions b p 
   where pms f = map (\t -> (f,t)) $ possibleDestinations b f
+
+prop_possibleMoves :: Board -> Pos -> Bool
+prop_possibleMoves b p = all ((o,d) -> canMoveBetween o d) $ possibleMoves b p
 
 -------------------------------------------------------------------------------
 
@@ -124,6 +134,9 @@ status (p,bpl,wpl,b) | hasLost Black = WhiteWon
 -- Returns true if the current player can make a move
 canMove :: Board -> Player -> Bool
 canMove b (Player c) = any (not . null . possibleDestinations b) pps
+  where pps = getPositionsWithState b (Just c)
+
+prop_canMove b (Player c) = all (\(o,d) -> not $ canMoveBetween o d b) [ (o,d) | o <- pps, d <- positions ]
   where pps = getPositionsWithState b (Just c)
 
 isPlacingPhase :: GameState -> Bool
