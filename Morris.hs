@@ -9,6 +9,7 @@ module Morris where
 import MorrisModel
 import MorrisDefinitions
 import MorrisBrains
+import MorrisTest
 import Data.Char
 
 -- starting state: Human moves first, each player has 9 pieces, and the board is empty

@@ -83,8 +83,8 @@ possibleDestinations :: Board -> Pos -> [Pos]
 possibleDestinations b f = filter (\t -> canMoveBetween f t b) eps
   where eps = getPositionsWithState b Nothing
   
-prop_possibleDestivation :: Board -> Pos -> Bool
-prop_possibleDestinations b p = all (canMoveBetween p) possibleDestinations b p
+prop_possibleDestinations :: Board -> Pos -> Bool
+prop_possibleDestinations b p = all (\pos -> canMoveBetween p pos b) $ possibleDestinations b p
 
 -- Given a game state after a player has made a mill, returns a list of
 -- the opponent pieces it would be legal to capture.  These are all the
@@ -104,8 +104,9 @@ movablePositions :: Board -> Player -> [Pos]
 movablePositions b (Player c) = movable $ getPositionsWithState b (Just c)
   where movable = filter (not . null . possibleDestinations b)
 
-prop_movablePositions :: Board -> Pos -> Bool
-prop_movablePositions b p = any (\(o,d) -> canMoveBetween o d) [ (o,d) | o <- mps, d <- positions ]
+prop_movablePositions :: Board -> Player -> Bool
+prop_movablePositions b p | not (null mps) = any (\(o,d) -> canMoveBetween o d b) [ (o,d) | o <- mps, d <- positions ]
+                          | otherwise      = True
   where mps = movablePositions b p
 
 -- Returns a list of all possible moves for the current player
@@ -113,8 +114,8 @@ possibleMoves :: Board -> Player -> [Move]
 possibleMoves b p = foldr (\from ms -> pms from ++ ms) [] $ movablePositions b p 
   where pms f = map (\t -> (f,t)) $ possibleDestinations b f
 
-prop_possibleMoves :: Board -> Pos -> Bool
-prop_possibleMoves b p = all ((o,d) -> canMoveBetween o d) $ possibleMoves b p
+prop_possibleMoves :: Board -> Player -> Pos -> Bool
+prop_possibleMoves b p pos = all (\(o,d) -> canMoveBetween o d b) $ possibleMoves b p
 
 -------------------------------------------------------------------------------
 
@@ -154,7 +155,9 @@ bestPlacement :: GameState -> Pos
 bestPlacement (p,bpl,wpl,b) = best $ getPositionsWithState b Nothing
   where
     best         = foldr1 (\p' bp -> if better p' bp then p' else bp)
-    better np op = betterScore p (place b p np) (place b p op) 
+    better np op = betterScore p (place b p np) (place b p op)
+
+prop_bestPlacement s = betterScore
 
 -- Picks the best capture for the computer to make after a mill 
 -- Parameters: starting state and list of possible captures (assume 
